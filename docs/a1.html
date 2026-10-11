@@ -1,18 +1,1197 @@
+
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+<html lang="en">
 
-    <title>Example Student's HCDE 439 Physical Computing Page!</title>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assignment 1 - Proximity Alert System</title>
 
-    <link href="style.css" rel="stylesheet" type="text/css" />
-  </head>
-  <body>
-    <h1>Example Student's Assignment 1!</h1>
-    <div class="header">
-      <img src="red-panda.jpg" />
-      <p>Here is all the documentation for assignment 1!</p>
-    </div>
-  </body>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+
+    h2 {
+      margin-top: 45px;
+    }
+
+    h3 {
+      margin-top: 25px;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 20px auto;
+    }
+
+    figure {
+      margin: 25px 0;
+    }
+
+    figcaption {
+      font-size: 14px;
+      color: #555;
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th, td {
+      border: 1px solid #aaa;
+      padding: 8px;
+      text-align: left;
+    }
+
+    pre {
+      background-color: #f1f1f1;
+      padding: 15px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Assignment 1: Proximity Alert System</h1>
+
+  <p>
+    HCDE 439 - Physical Computing | Bomyung Lee | 10.10.26
+  </p>
+
+  <p>
+    An Interactive Warning Light Inspired by Emergency Vehicles
+  </p>
+
+  <h2>Project Overview</h2>
+
+  <p>
+    For this assignment, I designed an interactive warning
+    light system inspired by the flashing emergency lights
+    of police cars and fire trucks.
+  </p>
+
+  <p>
+    What interested me most about emergency vehicle lights
+    was how their colors and blinking patterns can
+    immediately communicate a sense of warning and urgency.
+    Rather than simply making LEDs blink repeatedly,
+    I wanted to explore how these visual signals could
+    respond to a person's movement.
+  </p>
+
+  <p>
+    To achieve this, I combined three LED Lights (blue, yellow,
+    and red) with an Arduino Uno and an HC-SR04 ultrasonic
+    distance sensor.
+  </p>
+
+  <p>
+    Instead of following a fixed blinking sequence, the
+    system detects how close a person or object is and
+    changes its blinking patterns accordingly.
+  </p>
+
+  <p>
+    As someone approaches the sensor, the system transitions
+    through three warning stages.
+  </p>
+
+  <h3>LED Blinking Patterns</h3>
+
+  <table>
+    <tr>
+      <th>Distance</th>
+      <th>LED Behavior</th>
+      <th>Warning Level</th>
+    </tr>
+
+    <tr>
+      <td>More than 100 cm or no echo</td>
+      <td>All LEDs OFF</td>
+      <td>No warning</td>
+    </tr>
+
+    <tr>
+      <td>51-100 cm</td>
+      <td>Blue LED blinks slowly (500ms ON / 500ms OFF)</td>
+      <td>Initial alert</td>
+    </tr>
+
+    <tr>
+      <td>21-50 cm</td>
+      <td>
+        Blue LED stays ON while yellow LED
+        blinks (100ms ON / 100ms OFF)
+      </td>
+      <td>Caution</td>
+    </tr>
+
+    <tr>
+      <td>20 cm or closer</td>
+      <td>Red LED blinks rapidly (40ms ON / 40ms OFF)</td>
+      <td>Urgent warning</td>
+    </tr>
+  </table>
+
+  <h3>Design Intention</h3>
+
+  <p>
+    My goal was not simply to make three LEDs blink, but
+    to explore how changes in color, rhythm, and blinking
+    speed could communicate different levels of urgency.
+  </p>
+
+  <p>
+    Inspired by emergency vehicle warning lights, I
+    designed the system so that the visual warning becomes
+    more noticeable as someone approaches the sensor.
+    The slow blue blinking acts as an initial alert. 
+    When someone gets closer, the blue LED stays on while
+    the yellow LED begins blinking, creating a stronger 
+    visual warning. 
+    Finally, when someone gets very close to the sensor,
+    both the blue and yellow LEDs turn off and the red LED
+    begins blinking rapidly.
+  </p>
+
+  <p>
+    I wanted to explore how a simple electronic circuit
+    could create a responsive visual communication system
+    using sensor input.
+  </p>
+
+  <h2>Circuit Schematic</h2>
+
+  <figure>
+    <img
+      src="images/a1_schematic.png"
+      alt="Circuit schematic showing three LEDs and ultrasonic sensor"
+    >
+
+    <figcaption>
+      Figure 1. Schematic of my Proximity Alert System.
+      Each LED is connected to a separate Arduino digital
+      pin through a current-limiting resistor. The HC-SR04
+      ultrasonic sensor is connected to the Arduino's 5V,
+      GND, TRIG, and ECHO connections.
+    </figcaption>
+  </figure>
+
+  <p>
+    I connected each LED to its own digital output pin
+    so that the Arduino could control the LEDs
+    independently.
+  </p>
+
+  <p>
+    The blue LED is connected to pin 10, the yellow LED
+    to pin 11, and the red LED to pin 12.
+    Each LED has its own resistor to limit the current.
+    All three LED cathodes connect to a shared ground. 
+    The HC-SR04 ultrasonic sensor uses pin 9 for TRIG 
+    and pin 8 for ECHO.
+    The LED branches share ground, but they are not all
+    powered by the same digital output pin. This means
+    that each pin only supplies the current for its own
+    LED, allowing each LED to be controlled separately.
+  </p>
+
+  <h3>Pin Connections</h3>
+
+  <table>
+    <tr>
+      <th>Component</th>
+      <th>Arduino Pin</th>
+      <th>Resistor</th>
+    </tr>
+
+    <tr>
+      <td>Blue LED</td>
+      <td>10</td>
+      <td>100 ohms</td>
+    </tr>
+
+    <tr>
+      <td>Yellow LED</td>
+      <td>11</td>
+      <td>220 ohms</td>
+    </tr>
+
+    <tr>
+      <td>Red LED</td>
+      <td>12</td>
+      <td>220 ohms</td>
+    </tr>
+
+    <tr>
+      <td>Ultrasonic Sensor TRIG</td>
+      <td>9</td>
+      <td>N/A</td>
+    </tr>
+
+    <tr>
+      <td>Ultrasonic Sensor ECHO</td>
+      <td>8</td>
+      <td>N/A</td>
+    </tr>
+
+    <tr>
+      <td>Ultrasonic Sensor VCC</td>
+      <td>5V</td>
+      <td>N/A</td>
+    </tr>
+
+    <tr>
+      <td>Ground</td>
+      <td>GND</td>
+      <td>N/A</td>
+    </tr>
+  </table>
+
+  <h2>Resistor Calculations</h2>
+
+  <p>
+    Before building the circuit, I calculated the
+    appropriate resistance for each LED to limit
+    the current flowing through it.
+  </p>
+
+  <p>
+    I used a 5V output and a target current of
+    20mA (0.02A) for each LED.
+    The forward voltages used in these calculations
+    are approximate values for the different LED colors.
+  </p>
+
+  <p>
+    Since each LED and resistor are connected in series,
+    the voltage from the Arduino is divided between
+    the LED and its resistor.
+  </p>
+
+  <h3>Formula</h3>
+
+  <p>
+    Kirchhoff's Voltage Law:
+  </p>
+
+  <p>
+    <strong>5V = V(resistor) + V(LED)</strong>
+  </p>
+
+  <p>
+    Ohm's Law:
+  </p>
+
+  <p>
+    <strong>R = (V(source) - V(forward)) / I</strong>
+  </p>
+
+
+  <h3>Blue LED</h3>
+
+  <p>
+    Forward voltage: approximately 3.2V<br>
+    Target current: 0.02A
+  </p>
+
+  <p>
+    R = (5 - 3.2) / 0.02<br>
+    R = 90 ohms
+  </p>
+
+  <p>
+    I selected a 100-ohm resistor for the blue LED.
+  </p>
+
+  <h3>Yellow LED</h3>
+
+  <p>
+    Forward voltage: approximately 2.1V<br>
+    Target current: 0.02A
+  </p>
+
+  <p>
+    R = (5 - 2.1) / 0.02<br>
+    R = 145 ohms
+  </p>
+
+  <p>
+    I originally planned to use a 150-ohm resistor,
+    but I did not have one available.
+    Instead, I used a 220-ohm resistor.
+  </p>
+
+  <p>
+    Since the resistance is higher, the current is
+    lower than my initial target, which also
+    reduces the LED's expected brightness.
+  </p>
+
+
+  <h3>Red LED</h3>
+
+  <p>
+    Forward voltage: approximately 2.0V<br>
+    Target current: 0.02A
+  </p>
+
+  <p>
+    R = (5 - 2.0) / 0.02<br>
+    R = 150 ohms
+  </p>
+
+  <p>
+    I used a 220-ohm resistor for the red LED.
+  </p>
+
+
+  <h3>Resistor Summary</h3>
+
+  <table>
+    <tr>
+      <th>LED</th>
+      <th>Calculated Resistance</th>
+      <th>Actual Resistor</th>
+    </tr>
+
+    <tr>
+      <td>Blue</td>
+      <td>90 ohms</td>
+      <td>100 ohms</td>
+    </tr>
+
+    <tr>
+      <td>Yellow</td>
+      <td>145 ohms</td>
+      <td>220 ohms</td>
+    </tr>
+
+    <tr>
+      <td>Red</td>
+      <td>150 ohms</td>
+      <td>220 ohms</td>
+    </tr>
+  </table>
+
+  <figure>
+    <img
+      src="images/a1_calculations.png"
+      alt="Handwritten resistor calculations"
+    >
+
+    <figcaption>
+      Figure 2. My handwritten resistor calculations
+      based on Ohm's Law and the estimated forward
+      voltages of the LEDs. The final yellow LED
+      resistor was changed to 220 ohms because
+      a 150-ohm resistor was not available to use.
+    </figcaption>
+  </figure>
+
+  <h3>What I Learned</h3>
+
+  <p>
+    This process helped me understand the difference
+    between calculating resistor values and actually
+    building a circuit with the components available.
+  </p>
+
+  <p>
+    Although I initially calculated a value close to
+    150 ohms for the yellow LED, I had to adjust my
+    choice during the building process.
+    I learned that circuit design involves both
+    theoretical calculations and practical decisions.
+    Using a larger resistor allowed me to reduce
+    the current while keeping the LED functional.
+  </p>
+
+  <h2>Circuit Implementation</h2>
+
+  <p>
+    After completing the schematic and resistor
+    calculations, I built the circuit on a breadboard.
+    I used an Arduino Uno, three LEDs, individual
+    resistors, jumper wires, a breadboard, and
+    an HC-SR04 ultrasonic sensor.
+  </p>
+
+  <p>
+    The three LEDs are connected to individual digital
+    output pins, while the ultrasonic sensor measures
+    the distance between the circuit and nearby objects.
+  </p>
+
+  <figure>
+    <img
+      src="images/a1_overview_c.png"
+      alt="Complete circuit on breadboard"
+    >
+
+    <figcaption>
+      Figure 3. The complete circuit with the Arduino Uno,
+      breadboard, LEDs, resistors, and ultrasonic sensor.
+      The sensor provides distance measurements that
+      determine which LEDs turn on or blink.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img
+      src="images/a1_breadboard_leds.png"
+      alt="Close-up of breadboard"
+    >
+
+    <figcaption>
+      Figure 4. Close-up of the three LEDs connected
+      to individual resistors. The LEDs share a common
+      ground, but each is controlled by a different
+      Arduino output pin.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img
+      src="images/a1_ultrasonic_sensor.png"
+      alt="HC-SR04 ultrasonic sensor"
+    >
+
+    <figcaption>
+      Figure 5. The HC-SR04 ultrasonic sensor used
+      to detect the distance of an approaching
+      person or object.
+    </figcaption>
+  </figure>
+
+
+  <!-- FIRMWARE -->
+
+  <h2>Firmware</h2>
+
+  <p>
+    I programmed the Arduino to measure distance
+    and select a warning pattern based on how
+    close a person or object is to the sensor.
+  </p>
+
+  <p>
+    The program uses a sense-decide-blink process.
+    First, the ultrasonic sensor measures distance.
+    Next, the Arduino compares the measurement
+    with the distance thresholds. Finally,
+    the appropriate LED blinking pattern is activated.
+  </p>
+
+  <h3>How the Code Works</h3>
+
+  <ul>
+    <li>
+      <strong>setup():</strong>
+      Initializes serial communication and configures
+      the Arduino input and output pins.
+    </li>
+
+    <li>
+      <strong>calculateDistance():</strong>
+      Sends an ultrasonic pulse, measures its echo
+      duration, and converts the result into centimeters.
+    </li>
+
+    <li>
+      <strong>ledBlinkSlow():</strong>
+      Blinks an LED with 500ms ON and 500ms OFF.
+    </li>
+
+    <li>
+      <strong>ledBlinkMid():</strong>
+      Blinks an LED with 100ms ON and 100ms OFF.
+    </li>
+
+    <li>
+      <strong>ledBlinkFast():</strong>
+      Blinks an LED with 40ms ON and 40ms OFF.
+    </li>
+
+    <li>
+      <strong>loop():</strong>
+      Continuously measures the distance and
+      selects the appropriate warning stage.
+    </li>
+  </ul>
+
+  <h3>Arduino Code</h3>
+
+  <pre><code>
+// Assign pin 9 to the ultrasonic sensor trigger.
+#define TRIG 9
+
+// Assign pin 8 to the ultrasonic sensor echo.
+#define ECHO 8
+
+// Assign pin 10 to the blue LED.
+const int pinTen = 10;
+
+// Assign pin 11 to the yellow LED.
+const int pinEleven = 11;
+
+// Assign pin 12 to the red LED.
+const int pinTwelve = 12;
+
+
+// Initialize the Arduino.
+void setup() {
+
+  // Start serial communication at 9600 baud.
+  Serial.begin(9600);
+
+  // Configure TRIG as an output.
+  pinMode(TRIG, OUTPUT);
+
+  // Configure ECHO as an input.
+  pinMode(ECHO, INPUT);
+
+  // Configure the blue LED as an output.
+  pinMode(pinTen, OUTPUT);
+
+  // Configure the yellow LED as an output.
+  pinMode(pinEleven, OUTPUT);
+
+  // Configure the red LED as an output.
+  pinMode(pinTwelve, OUTPUT);
+}
+
+
+// Measure distance using the ultrasonic sensor.
+long calculateDistance() {
+
+  // Store the echo duration and calculated distance.
+  long duration, distance;
+
+  // Set the trigger pin LOW.
+  digitalWrite(TRIG, LOW);
+
+  // Wait two microseconds.
+  delayMicroseconds(2);
+
+  // Send a HIGH trigger pulse.
+  digitalWrite(TRIG, HIGH);
+
+  // Keep the trigger HIGH for ten microseconds.
+  delayMicroseconds(10);
+
+  // End the trigger pulse.
+  digitalWrite(TRIG, LOW);
+
+  // Measure how long the echo signal stays HIGH.
+  duration = pulseIn(ECHO, HIGH);
+
+  // Convert echo duration into centimeters.
+  distance = duration * 17 / 1000;
+
+  // Print the distance label.
+  Serial.print("Distance: ");
+
+  // Print the measured distance.
+  Serial.print(distance);
+
+  // Print the distance unit.
+  Serial.println(" cm");
+
+  // Return the calculated distance.
+  return distance;
+}
+
+
+// Blink an LED slowly.
+void ledBlinkSlow(int i) {
+
+  // Turn the selected LED ON.
+  digitalWrite(i, HIGH);
+
+  // Wait 500 milliseconds.
+  delay(500);
+
+  // Turn the selected LED OFF.
+  digitalWrite(i, LOW);
+
+  // Wait 500 milliseconds.
+  delay(500);
+}
+
+
+// Blink an LED at medium speed.
+void ledBlinkMid(int i) {
+
+  // Turn the selected LED ON.
+  digitalWrite(i, HIGH);
+
+  // Wait 100 milliseconds.
+  delay(100);
+
+  // Turn the selected LED OFF.
+  digitalWrite(i, LOW);
+
+  // Wait 100 milliseconds.
+  delay(100);
+}
+
+
+// Blink an LED rapidly.
+void ledBlinkFast(int i) {
+
+  // Turn the selected LED ON.
+  digitalWrite(i, HIGH);
+
+  // Wait 40 milliseconds.
+  delay(40);
+
+  // Turn the selected LED OFF.
+  digitalWrite(i, LOW);
+
+  // Wait 40 milliseconds.
+  delay(40);
+}
+
+
+// Continuously control the warning system.
+void loop() {
+
+  // Measure the distance.
+  long distance = calculateDistance();
+
+  // Check if the object is beyond 100cm or no echo exists.
+  if (distance > 100 || distance == 0) {
+
+    // Turn the blue LED OFF.
+    digitalWrite(pinTen, LOW);
+
+    // Turn the yellow LED OFF.
+    digitalWrite(pinEleven, LOW);
+
+    // Turn the red LED OFF.
+    digitalWrite(pinTwelve, LOW);
+
+  // Activate the initial warning stage.
+  } else if (distance > 50) {
+
+    // Turn the yellow LED OFF.
+    digitalWrite(pinEleven, LOW);
+
+    // Turn the red LED OFF.
+    digitalWrite(pinTwelve, LOW);
+
+    // Blink the blue LED slowly.
+    ledBlinkSlow(pinTen);
+
+  // Activate the caution stage.
+  } else if (distance > 20) {
+
+    // Turn the red LED OFF.
+    digitalWrite(pinTwelve, LOW);
+
+    // Keep the blue LED ON.
+    digitalWrite(pinTen, HIGH);
+
+    // Blink the yellow LED at medium speed.
+    ledBlinkMid(pinEleven);
+
+  // Activate the urgent warning stage.
+  } else {
+
+    // Turn the blue LED OFF.
+    digitalWrite(pinTen, LOW);
+
+    // Turn the yellow LED OFF.
+    digitalWrite(pinEleven, LOW);
+
+    // Blink the red LED rapidly.
+    ledBlinkFast(pinTwelve);
+  }
+}
+  </code></pre>
+
+
+  <h3>Development and Debugging</h3>
+
+  <p>
+    During the development process, I encountered
+    several issues while testing the Arduino code
+    and the physical circuit.
+  </p>
+
+  <p>
+    One of the first problems was that the ultrasonic
+    sensor repeatedly returned a distance of 0cm.
+    I discovered that I had not correctly configured
+    the TRIG and ECHO pins using pinMode().
+    After fixing this, I was able to read
+    distance measurements.
+    I also had trouble with the blinking speeds.
+    Initially, some of the warning stages blinked
+    at very similar speeds, which made them
+    difficult to distinguish.
+    I adjusted the ON and OFF intervals and
+    decided to keep the blue LED continuously
+    illuminated during the yellow warning stage
+    to make the difference clearer.
+  </p>
+
+  <p>
+    Another issue occurred when the sensor did
+    not detect an echo. Since pulseIn() returns
+    0 when no echo is received, the program
+    initially interpreted this as an object
+    being extremely close.
+    I fixed this by treating 0cm as no detected
+    object and turning all the LEDs off.
+    I also encountered some compile errors,
+    including an incorrect use of Serial.print()
+    and duplicate setup() and loop() definitions
+    caused by having multiple sketch files
+    in the same Arduino folder.
+  </p>
+
+  <p>
+    After understanding the causes of these
+    errors, I corrected the code and tested
+    the circuit again.
+  </p>
+
+
+  <h3>Experimenting with Blinking Speed</h3>
+
+  <p>
+    One of the most interesting problems I encountered
+    was related to the blinking speed of the red LED.
+  </p>
+
+  <p>
+    I initially set the LED to blink for 10ms ON
+    and 10ms OFF, which produces a frequency of 50Hz.
+    However, at this speed, the red LED appeared
+    almost continuously illuminated.
+    The blinking was difficult for me to see.
+    Since I wanted the red LED to communicate an
+    urgent warning, I changed the timing to
+    40ms ON and 40ms OFF, or 12.5Hz.
+    This slower blinking pattern was much easier
+    to recognize and created a clearer warning.
+    This experience taught me that the fastest
+    blinking speed is not necessarily the most
+    effective warning pattern.
+  </p>
+
+  <p>
+    In interaction design, it is important to
+    consider not only what the system does,
+    but also how people perceive its behavior.
+  </p>
+
+
+  <h3>Limitations and Future Improvements</h3>
+
+  <p>
+    The current code uses delay() to control
+    the blinking speed of each LED.
+    Although delay() makes the timing easier
+    to program, it temporarily pauses the
+    Arduino while the LED is blinking.
+    As a result, the sensor cannot measure
+    a new distance during the delay.
+  </p>
+
+  <p>
+    For example, during the slow blinking stage,
+    the system may take up to approximately
+    one second to react to a change in distance.
+    In the future, I would like to explore
+    using millis() instead of delay()
+    so the Arduino can measure distance
+    and control the LEDs without blocking
+    the program.
+  </p>
+
+
+  <!-- CIRCUIT IN OPERATION -->
+
+  <h2>Circuit in Operation</h2>
+
+  <figure>
+    <img
+      src="images/blink_circuit_processing.gif"
+      alt="Demonstration of the Proximity Alert System"
+    >
+
+    <figcaption>
+      Figure 6. Demonstration of the Proximity Alert System.
+      As my hand approaches the ultrasonic sensor, the light
+      pattern changes from a slow blue blink to a yellow
+      caution stage and finally a rapid red warning.
+      Moving my hand away reverses the sequence.
+    </figcaption>
+  </figure>
+
+  <p>
+    When nobody is within 100cm of the sensor,
+    all three LEDs remain off.
+    As my hand moves closer, the blue LED starts
+    blinking slowly. When the distance decreases
+    further, the blue LED remains on while
+    the yellow LED begins blinking.
+  </p>
+
+  <p>
+    Finally, at a distance of 20cm or less,
+    the blue and yellow LEDs turn off and the
+    red LED starts blinking rapidly.
+    This demonstrates how the Arduino can use
+    a sensor to control a changing LED pattern
+    instead of repeating a fixed sequence.
+  </p>
+
+
+  <!-- QUESTIONS -->
+
+  <h2>Questions</h2>
+
+
+  <h3>
+    1. Graph of Voltage Across the LEDs Over Time
+  </h3>
+
+  <figure>
+    <img
+      src="images/a1_graph_V_T.png"
+      alt="Graph showing voltage across the LEDs over time"
+    >
+
+    <figcaption>
+      Figure 7. Theoretical voltage across the blue,
+      yellow, and red LEDs during an example
+      10-second approach. This graph is based
+      on the programmed blinking intervals,
+      not actual voltage measurements.
+    </figcaption>
+  </figure>
+
+  <p>
+    The graph shows how the voltage across
+    each LED changes over time as a person
+    approaches the sensor.
+    When an LED is on, the voltage across it is
+    approximately equal to its forward voltage:
+    3.2V for blue, 2.1V for yellow, and 2.0V 
+    for red.
+    When an LED is off, the voltage across
+    it is approximately 0V.
+    Since the blinking pattern depends on
+    distance rather than time, the graph
+    represents an example scenario.
+  </p>
+
+  <p>
+    From 0 to 2 seconds, nobody is near
+    the sensor, so all LEDs remain off.
+  </p>
+
+  <p>
+    From 2 to 5 seconds, the person is
+    between 51cm and 100cm away.
+    The blue LED blinks with a one-second period.
+  </p>
+
+  <p>
+    From 5 to 8 seconds, the person moves
+    into the 21-50cm zone. The blue LED
+    remains on while the yellow LED blinks.
+  </p>
+
+  <p>
+    From 8 to 10 seconds, the person is
+    within 20cm of the sensor, so the
+    red LED blinks rapidly.
+  </p>
+
+
+  <h3>
+    2. How many LEDs could you blink independently
+    with your Arduino? How much current would that draw?
+  </h3>
+
+  <p>
+    The Arduino Uno has 14 digital pins
+    and 6 analog input pins that can also
+    function as digital outputs.
+    Therefore, it could theoretically
+    control up to 20 LEDs independently
+    if each LED used a separate pin.
+  </p>
+
+  <p>
+    However, pins 0 and 1 are typically
+    reserved for serial communication,
+    and my circuit uses pins 8 and 9
+    for the ultrasonic sensor.
+    This leaves 16 pins available
+    for independently controlled LEDs.
+    The total current depends on the
+    resistors and LEDs used.
+  </p>
+
+  <p>
+    If each LED draws around 10mA,
+    the total current when all 16 LEDs
+    are on would be:
+  </p>
+
+  <p>
+    <strong>16 x 10mA = 160mA</strong>
+  </p>
+
+  <p>
+    This calculation assumes that all
+    16 LEDs are illuminated simultaneously.
+    I would still need to consider the
+    Arduino microcontroller's individual
+    pin and total current limits.
+    If I wanted to control a larger
+    number of LEDs, I could use
+    higher-value resistors, reduce
+    the number of LEDs illuminated
+    at one time, or use external
+    LED driver circuits.
+  </p>
+
+
+  <h3>
+    3. How fast do you need to blink your LEDs
+    until you can no longer tell that they are blinking?
+  </h3>
+
+  <p>
+    During testing, I initially programmed
+    the red LED to turn on for 10 milliseconds
+    and off for 10 milliseconds.
+    This created a complete blinking
+    period of 20 milliseconds.
+  </p>
+
+  <p>
+    Frequency = 1 / period
+  </p>
+
+  <p>
+    Frequency = 1 / 0.02 seconds
+  </p>
+
+  <p>
+    <strong>Frequency = 50Hz</strong>
+  </p>
+
+  <p>
+    At this speed, the red LED appeared
+    almost continuously illuminated
+    to my eyes, making the blinking
+    difficult to distinguish.
+    I eventually changed the interval
+    to 40ms ON and 40ms OFF.
+    This creates a complete period
+    of 80 milliseconds.
+  </p>
+
+  <p>
+    Frequency = 1 / 0.08 seconds
+  </p>
+
+  <p>
+    <strong>Frequency = 12.5Hz</strong>
+  </p>
+
+  <p>
+    At 12.5Hz, the blinking became
+    much easier to recognize.
+    Based on my observation, blinking
+    at approximately 50Hz was too fast
+    for me to clearly distinguish
+    under my testing conditions.
+    However, the speed at which flashing
+    appears continuous can vary depending
+    on the person, brightness, and
+    viewing environment.
+  </p>
+
+
+  <h3>
+    4. Did you use AI tools in completing
+    this assignment?
+  </h3>
+
+  <p>
+    Yes. I used Claude as a learning and 
+    debugging assistant throughout this 
+    assignment.
+    I also used ChatGPT to review the
+    assignment requirements and organize 
+    my final documentation.
+    I developed the overall concept,
+    assembled the circuit, worked
+    through the resistor calculations,
+    and tested the LED patterns myself.
+  </p>
+
+  <p>
+    Specifically, I used AI in the
+    following ways:
+  </p>
+
+  <ol>
+    <li>
+      Understanding requirements:
+      AI helped me break the assignment
+      into smaller tasks and identify
+      the required documentation.
+    </li>
+
+    <li>
+      Checking component values:
+      I used AI to review typical
+      LED forward voltages and
+      check my resistor calculations.
+    </li>
+
+    <li>
+      Understanding circuit concepts:
+      AI helped explain the difference
+      between connecting multiple LEDs
+      to one pin and connecting each
+      LED to its own pin.
+    </li>
+
+    <li>
+      Reviewing my schematic:
+      AI helped me understand schematic
+      conventions and improve my
+      initial drawing.
+    </li>
+
+    <li>
+      Exploring pattern ideas:
+      I discussed different blinking
+      patterns with AI before deciding
+      how the warning stages should work.
+    </li>
+
+    <li>
+      Debugging Arduino code:
+      AI helped explain compile errors
+      and unexpected behaviors.
+      I applied the changes and tested
+      them on the physical circuit.
+    </li>
+  </ol>
+
+
+  <h3>Reflection on AI Usage</h3>
+
+  <p>
+    Using AI was helpful because it
+    allowed me to better understand
+    the concepts behind my circuit
+    rather than simply following
+    instructions.
+    I found it especially useful
+    when debugging my Arduino code,
+    because it helped me understand
+    why certain errors occurred
+    and how different parts of
+    the program affected the LEDs.
+    However, I also learned that
+    AI suggestions need to be
+    tested and verified through
+    actual implementation.
+    For example, the fastest blinking
+    pattern initially appeared
+    almost continuously illuminated,
+    even though the program was
+    technically making the LED blink.
+  </p>
+
+  <p>
+    By building the circuit, calculating
+    resistor values, and experimenting
+    with different blinking speeds
+    myself, I gained a better
+    understanding of how hardware
+    and software work together.
+  </p>
+
+
+  <!-- REFERENCES -->
+
+  <h2>References</h2>
+
+  <ol>
+    <li>
+      128bit. (2026, January 15).
+      Arduino Basics: Turning LEDs On and Off.
+      <a href="https://mariana-anime.tistory.com/5">
+        Tistory Tutorial
+      </a>
+    </li>
+
+    <li>
+      boilmint7.
+      HC-SR04 Ultrasonic Sensor Tutorial.
+      <a href="https://m.blog.naver.com/boilmint7/220926404472">
+        Naver Blog
+      </a>
+    </li>
+
+    <li>
+      Arduino.
+      Arduino Language Reference.
+      <a href="https://www.arduino.cc/reference/en/">
+        Official Arduino Documentation
+      </a>
+    </li>
+
+    <li>
+      Anthropic. (2026).
+      Claude. AI tutoring and debugging assistance.
+    </li>
+
+    <li>
+      OpenAI. (2026).
+      ChatGPT. Documentation review and
+      website organization.
+    </li>
+
+    <li>
+      Documentation:
+      I used AI to help organize my website,
+      write explanatory comments for my code,
+      and prepare the theoretical voltage graph.
+      I reviewed and edited the final content.
+    </li>
+  </ol>
+
+  <p>
+    <a href="index.html">Back to Home</a>
+  </p>
+
+</body>
 </html>
+
