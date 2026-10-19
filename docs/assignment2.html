@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assignment 2: LED Memory Game | Bomyung Lee</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+
+    h2 {
+      margin-top: 45px;
+    }
+
+    h3 {
+      margin-top: 25px;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 20px auto;
+    }
+
+    figure {
+      margin: 25px 0;
+    }
+
+    figcaption {
+      font-size: 14px;
+      color: #555;
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th, td {
+      border: 1px solid #aaa;
+      padding: 8px;
+      text-align: left;
+    }
+
+    pre {
+      background-color: #f1f1f1;
+      padding: 15px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Assignment 2: LED Memory Game</h1>
+
+  <p>HCDE 439 - Physical Computing | Bomyung Lee | 10.18.26</p>
+
+  <p>An Interactive Memory Game Using LEDs and Push Buttons</p>
+
+  <h2>Project Overview</h2>
+  <p>For this assignment, I designed a simple 
+    memory game using an Arduino Uno, three individual
+    LEDs, three push buttons, and one RGB LED.
+  </p>
+
+  <p>The idea was to create a game where the Arduino 
+    randomly generates a sequence of lights, and the player 
+    has to remember and repeat the same sequence using buttons.
+    I wanted to make something that was interactive rather 
+    than just having LEDs turn on and off automatically. 
+    By combining visual outputs with button inputs, I could
+    create a simple game that responds to the player's actions.
+    The game uses three LEDs: white, yellow, and blue. 
+    Each LED has a corresponding push button. The RGB LED 
+    provides feedback depending on whether the player 
+    remembers the sequence correctly.
+  </p>
+
+  <h3>Game Interactions</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Stage</th>
+        <th>LED Behavior</th>
+        <th>Player Interaction</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>Start</td>
+        <td>Arduino generates a random sequence</td>
+        <td>Wait for the pattern</td>
+      </tr>
+      <tr>
+        <td>Show Sequence</td>
+        <td>Three LEDs light up one at a time</td>
+        <td>Memorize the order</td>
+      </tr>
+      <tr>
+        <td>Player Input</td>
+        <td>The corresponding LED lights up when a button is pressed</td>
+        <td>Repeat the sequence</td>
+      </tr>
+      <tr>
+        <td>Correct Answer</td>
+        <td>RGB LED fades in and out in green</td>
+        <td>Successful round</td>
+      </tr>
+      <tr>
+        <td>Incorrect Answer</td>
+        <td>RGB LED lights up in red</td>
+        <td>Unsuccessful round</td>
+      </tr>
+      <tr>
+        <td>Restart</td>
+        <td>A new random sequence is generated</td>
+        <td>Try again</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Design Intention</h3>
+
+  <p>My goal was to create a simple interactive toy 
+    that combines memory, visual feedback, and physical
+    interaction.
+  </p>
+
+  <p>I chose a memory game because I thought the basic 
+    algorithm would be manageable with the Arduino concepts
+    I had learned so far. The game only needs to generate
+    a sequence, display it, read the player's input, 
+    and compare the two sequences. I also wanted to use 
+    an RGB LED for feedback instead of adding separate 
+    red and green LEDs. This allowed me to experiment 
+    with a multicolor LED and use different colors to 
+    communicate the result of the game.
+  </p>
+
+  <p>For a correct answer, I decided to make the green LED 
+    gradually brighten and fade using <code>analogWrite()</code>. 
+    For an incorrect answer, the red LED turns on briefly. 
+    I thought this would make the feedback easy to recognize.
+  </p>
+
+  <h2>Circuit Schematic</h2>
+
+  <figure>
+    <img src="images/a2_schematic.png" alt="Circuit schematic of the LED memory game">
+
+    <figcaption>Figure 1. Schematic of my LED Memory Game. 
+    Three individual LEDs are connected to separate Arduino
+    output pins through current-limiting resistors. 
+    Three push buttons are connected to digital input 
+    pins using the Arduino's internal pull-up resistors. 
+    The RGB LED uses three additional output pins to 
+    control its red, green, and blue channels.</figcaption>
+  </figure>
+
+  <p>I connected each LED to its own digital output pin 
+    so that the Arduino could control the lights independently. 
+    The three push buttons are connected to separate input pins. 
+    I used <code>INPUT_PULLUP</code>, which allows the buttons 
+    to work without additional external resistors. When a button
+    is pressed, its input reads <code>LOW</code>. The RGB LED is a 
+    common-cathode LED, so its common pin is connected to ground. 
+    Each color channel has its own current-limiting resistor.
+  </p>
+
+  <h3>Pin Connections</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th>Arduino Pin</th>
+        <th>Resistor</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>White LED</td>
+        <td>3</td>
+        <td>220 ohms</td>
+      <tr>
+      <tr>
+        <td>Yellow LED</td>
+        <td>5</td>
+        <td>330 ohms</td>
+      </tr>
+      <tr>
+        <td>Blue LED</td>
+        <td>6</td>
+        <td>220 ohms</td>
+      </tr>
+      <tr>
+        <td>Button 1 (White)</td>
+        <td>2</td>
+        <td>Internal pull-up</td>
+      </tr>
+      <tr>
+        <td>Button 2 (Yellow)</td>
+        <td>4</td>
+        <td>Internal pull-up</td>
+      </tr>
+      <tr>
+        <td>Button 3 (Blue)</td>
+        <td>7</td>
+        <td>Internal pull-up</td>
+      </tr>
+      <tr>
+        <td>RGB Red</td>
+        <td>9</td>
+        <td>330 ohms</td>
+      </tr>
+      <tr>
+        <td>RGB Green</td>
+        <td>10</td>
+        <td>220 ohms</td>
+      </tr>
+      <tr>
+        <td>RGB Blue</td>
+        <td>11</td>
+        <td>220 ohms</td>
+      </tr>
+      <tr>
+        <td>RGB Common Cathode</td>
+        <td>GND</td>
+        <td>N/A</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Button Current Limiting</h3>
+
+  <p>For the three push buttons, I used Arduino's built-in
+    <code>INPUT_PULLUP</code> resistors instead of adding
+    external resistors. The internal pull-up resistors keep 
+    the input pins HIGH when the buttons are not pressed. 
+    When a button is pressed,   the pin is connected to 
+    ground and reads LOW.
+  </p>
+
+  <p>According to the Arduino Uno's ATmega328P specifications,
+    the internal pull-up resistance is approximately 20-50 kΩ.
+    Using Ohm's Law, the estimated current when a button
+    is pressed is:
+  </p>
+
+  <p><strong>I = V / R</strong></p>
+
+  <p><strong>At 20 kΩ:</strong></p>
+
+  <p>I = 5V / 20,000Ω =
+    <strong>0.25mA</strong>
+  </p>
+
+  <p><strong>At 50 kΩ:</strong></p>
+
+  <p>I = 5V / 50,000Ω =
+    <strong>0.10mA</strong>
+  </p>
+
+  <p>Therefore, the current through each pressed button
+    is approximately <strong>0.10-0.25mA</strong>.
+    I chose to use <code>INPUT_PULLUP</code> because it
+    simplifies the circuit, reduces the number of external
+    components, and limits the current through the buttons.
+  </p>
+
+  <h2>Resistor Calculations</h2>
+
+  <p>Before building the circuit, I calculated the resistor 
+    values needed to limit the current flowing through each LED.
+    I used a 5V output and a target current of approximately 
+    10mA (0.01A) for each LED channel. The forward voltages 
+    used in these calculations are estimated values based on
+    typical LED colors.
+  </p>
+
+  <h3>Formula</h3>
+
+  <p>Kirchhoff's Voltage Law:</p>
+
+  <p><strong>5V = V(resistor) + V(LED)</strong></p>
+
+  <p>Ohm's Law:</p>
+
+  <p><strong>R = (V(source) - V(forward)) / I</strong></p>
+
+  <h3>White LED</h3>
+
+  <p>Forward voltage: approximately 3.2V<br>Target current: 0.01A</p>
+
+  <p>R = (5 - 3.2) / 0.01<br>R = 180 ohms</p>
+
+  <p>I selected a 220-ohm resistor.</p>
+
+  <p>Expected current:<br>I = (5 - 3.2) / 220<br><strong>I ≈ 8.18mA</strong></p>
+
+  <h3>Yellow LED</h3>
+
+  <p>Forward voltage: approximately 2.1V<br>Target current: 0.01A</p>
+
+  <p>R = (5 - 2.1) / 0.01<br>R = 290 ohms</p>
+
+  <p>I selected a 330-ohm resistor.</p>
+
+  <p>Expected current:<br>I = (5 - 2.1) / 330<br><strong>I ≈ 8.79mA</strong></p>
+
+  <h3>Blue LED</h3>
+
+  <p>Forward voltage: approximately 3.2V<br>Target current: 0.01A</p>
+
+  <p>R = (5 - 3.2) / 0.01<br>R = 180 ohms</p>
+
+  <p>I selected a 220-ohm resistor.</p>
+
+  <p>Expected current: <strong>I ≈ 8.18mA</strong></p>
+
+  <h3>RGB LED</h3>
+
+  <p>Because the RGB LED contains three separate color channels,
+    I used an individual resistor for each channel.</p>
+
+  <p><strong>Red channel</strong>
+    <br>Forward voltage: approximately 2.0V
+    <br>R = (5 - 2.0) / 0.01 = 300 ohms
+    <br>Selected resistor: 330 ohms
+    <br>Expected current: <strong>9.09mA</strong>
+  </p>
+
+  <p><strong>Green channel</strong>
+    <br>Forward voltage: approximately 3.2V
+    <br>R = (5 - 3.2) / 0.01 = 180 ohms
+    <br>Selected resistor: 220 ohms
+    <br>Expected current: <strong>8.18mA</strong>
+  </p>
+
+  <p><strong>Blue channel</strong>
+    <br>Forward voltage: approximately 3.2V
+    <br>R = (5 - 3.2) / 0.01 = 180 ohms
+    <br>Selected resistor: 220 ohms
+    <br>Expected current: <strong>8.18mA</strong>
+  </p>
+
+  <h3>Resistor Summary</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>LED</th>
+        <th>Calculated Resistance</th>
+        <th>Actual Resistor</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>White</td>
+        <td>180 ohms</td>
+        <td>220 ohms</td>
+      </tr>
+      <tr>
+        <td>Yellow</td>
+        <td>290 ohms</td>
+        <td>330 ohms</td>
+      </tr>
+      <tr>
+        <td>Blue</td>
+        <td>180 ohms</td>
+        <td>220 ohms</td>
+      </tr>
+      <tr>
+        <td>RGB Red</td>
+        <td>300 ohms</td>
+        <td>330 ohms</td>
+      </tr>
+      <tr>
+        <td>RGB Green</td>
+        <td>180 ohms</td>
+        <td>220 ohms</td>
+      </tr>
+      <tr>
+        <td>RGB Blue</td>
+        <td>180 ohms</td>
+        <td>220 ohms</td>
+      </tr>
+    </tbody>
+
+  </table>
+
+  <figure>
+    <img src="images/a2_calculations.png" alt="Handwritten LED resistor calculations">
+
+    <figcaption>Figure 2. My resistor calculations using 
+      Ohm's Law and estimated LED forward voltages. I selected
+       slightly larger standard resistor values to keep the 
+       expected current below my target of 10mA.</figcaption>
+  </figure>
+
+  <h3>What I Learned</h3>
+
+  <p>Calculating the resistor values was relatively straightforward
+    because I had already practiced using Ohm's Law in previous assignments.
+    However, this circuit required more resistors than my previous 
+    project because I was using three individual LEDs and three channels 
+    of an RGB LED. I also learned that even though an RGB LED is 
+    physically one component, its red, green, and blue channels need 
+    to be considered separately when calculating resistance. The expected
+    current values are theoretical estimates. Actual current may vary 
+    depending on the LED's real forward voltage and the Arduino's 
+    output voltage.
+  </p>
+
+  <h2>Circuit Implementation</h2>
+
+  <p>After completing the schematic and resistor calculations, 
+    I assembled the circuit using an Arduino Uno, a breadboard,
+    three individual LEDs, three push buttons, one RGB LED, 
+    resistors, and jumper wires.
+  </p>
+
+  <figure>
+    <img src="images/a2_overview.png" alt="Complete Arduino LED memory game circuit">
+
+    <figcaption>Figure 3. Complete LED Memory Game circuit showing 
+      the Arduino Uno, three game LEDs, three push buttons, 
+      RGB LED, resistors, and jumper wires.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="images/a2_breadboard.png" alt="Close-up of the breadboard wiring">
+
+    <figcaption>Figure 4. Close-up of the breadboard connections. 
+      Each LED has its own current-limiting resistor, and the push
+      buttons share a common ground.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="images/a2_led.png" alt="RGB LED close-up">
+    <figcaption>Figure 5. The four-pin RGB LED used to provide 
+    feedback for correct and incorrect answers.</figcaption>
+  </figure>
+
+  <p>Unlike my previous assignment, the most difficult part of this project
+    was not the programming. It was arranging all the components on
+    the breadboard. Since I had to use multiple LEDs, buttons, resistors,
+    and jumper wires, I spent a lot of time thinking about how to fit 
+    everything onto the breadboard while keeping the connections organized.
+    The individual LEDs and push buttons were relatively easy to connect.
+    I tested each component separately before moving on to the next one,
+    which helped me identify problems more easily. However, the RGB LED
+    was much more challenging than I expected.
+  </p>
+
+  <h2>Firmware</h2>
+
+  <p>I programmed the Arduino to generate a random sequence of three
+    LED colors and compare it with the player's button inputs. The 
+    program follows a simple process: generate a sequence, display 
+    the pattern, wait for the player's input, compare the answers, 
+    and show the result.
+  </p>
+
+  <h3>How the Code Works</h3>
+
+  <ul>
+    <li>
+      <strong>setup():</strong> Configures the LED pins as outputs
+      and the button pins as inputs using <code>INPUT_PULLUP</code>.
+    </li>
+    <li><strong>randomSeed():</strong> Initializes the random number
+      generator using an analog reading from an unused pin.
+    </li>
+    <li><strong>random():</strong> Selects random numbers from 0 
+      to 2, corresponding to the three LEDs.
+    </li>
+    <li><strong>for loops:</strong> Generate and display the 
+      sequence, check button inputs, and create the green fading effect.
+    </li>
+    <li>
+      <strong>digitalWrite():</strong> Turns the LEDs on and off.
+    </li>
+    <li>
+      <strong>digitalRead():</strong> Detects which button the
+      player presses.
+    </li>
+    <li><strong>analogWrite():</strong> Changes the green RGB 
+      LED's brightness using PWM.
+    </li>
+    <li><strong>if / else:</strong> Determines whether the 
+      player's sequence is correct.
+    </li>
+    <li><strong>loop():</strong> Repeats the game with a new
+      random sequence.
+    </li>
+  </ul>
+
+  <h3>Arduino Code</h3>
+
+  <pre><code id="arduino-code"></code></pre>
+
+  <h3>Development and Debugging</h3>
+
+  <p>Compared to my previous assignment, I felt more comfortable
+    working with the Arduino code. I was able to understand 
+    and work through much of the game's algorithm because 
+    the overall logic was not very complicated. I needed to 
+    generate a sequence, display it, collect three button inputs, 
+    and compare them with the original sequence. I used ChatGPT 
+    to help develop and review the code, but I was also able to 
+    follow the logic and understand how the different parts 
+    worked together. There were still some issues during 
+    development, and I had to make corrections along the way. 
+    Rather than only changing the code to make it work, I 
+    tried to understand why something was not working and 
+    what needed to change. This helped me become more comfortable
+    with debugging. I learned that identifying the cause of an 
+    error is just as important as fixing it.
+  </p>
+
+  <h3>Understanding Random Sequences</h3>
+
+  <p>One thing I learned through ChatGPT was how Arduino generates 
+    random numbers. Before this assignment, I did not know how 
+    to randomly select one of several LEDs. ChatGPT introduced 
+    me to the <code>random()</code> function and explained how 
+    it could be combined with an array. For example, 
+    <code>random(0, 3)</code> generates one of three possible
+    values: 0, 1, or 2. Each number corresponds to one LED in 
+    my array. I also learned about <code>randomSeed()</code>, 
+    which helps vary the sequence of random numbers when 
+    the Arduino restarts. Once I understood this concept, 
+    the rest of the game's logic became much easier 
+    to follow.
+  </p>
+
+  <h3>Challenges with the RGB LED</h3>
+
+  <p>The most frustrating part of this assignment was definitely 
+    wiring the RGB LED. Since it had four pins, I first needed 
+    to identify which pin controlled which color and which pin 
+    was the common connection. I even used a multimeter to test 
+    the RGB LED and figure out the individual color channels 
+    before connecting it to the circuit.
+  </p>
+
+  <p>I thought this would make the wiring process easier, but I 
+    somehow managed to connect the pins incorrectly anyway. 
+    At one point, the game displayed blue instead of red when 
+    the player entered an incorrect answer. I initially thought 
+    something was wrong with the code, but the problem was 
+    actually the physical wiring. I had to rearrange the 
+    RGB LED connections around four or five times before 
+    everything finally worked correctly. It was a little 
+    ridiculous because I had already spent time identifying 
+    the pins with a multimeter, only to make mistakes while 
+    wiring them.
+  </p>
+
+  <p>After I corrected the connections so that pin 9 controlled red, 
+    pin 10 controlled green, and pin 11 controlled blue, the RGB LED 
+    worked as expected. Once that issue was solved, the rest of 
+    the project went much more smoothly. This experience taught 
+    me that even if the code and schematic are correct, the 
+    physical circuit can still behave differently because of 
+    a simple wiring mistake. I also realized how important 
+    it is to test each component individually instead of 
+    trying to troubleshoot the entire circuit at once.
+  </p>
+
+  <h3>Limitations and Future Improvements</h3>
+
+  <p>The current version of the game uses a sequence of three LEDs.
+    While this makes the game easy to understand and play, 
+    the difficulty stays the same for every round. In the future, 
+    I would like to make the game more challenging by increasing 
+    the sequence length whenever the player gets the answer correct. 
+    I could also use the blue channel of the RGB LED to create 
+    an additional animation when the game starts.
+  </p>
+
+  <p>Another limitation is that the program uses <code>delay()</code> 
+    to control the timing of the LED sequence. Although this makes 
+    the code easier to write, the Arduino cannot respond to new 
+    button inputs during those delays. >For this assignment, 
+    I decided to keep the code simple because I wanted to focus 
+    on understanding the basic interactions between the buttons 
+    and LEDs.
+  </p>
+
+  <h2>Circuit in Operation</h2>
+
+  <figure>
+    <img src="images/Fade_circuit_processing.gif" alt="GIF demonstrating the LED memory game">
+
+    <figcaption>Figure 6. Demonstration of the LED Memory Game. 
+      The Arduino displays a random sequence of three LEDs, 
+      and the player repeats the sequence using the 
+      corresponding buttons. A correct answer produces a green 
+      fading effect, while an incorrect answer produces a red light.
+    </figcaption>
+  </figure>
+
+  <p>When the game starts, the Arduino randomly selects three 
+    LED colors and displays them one at a time. After the sequence 
+    finishes, the player presses the three buttons in the same order. 
+    Each button activates its corresponding LED, providing 
+    immediate visual feedback. Once the player has entered all 
+    three inputs, the Arduino compares them with the original sequence. 
+    If the player enters the correct sequence, the RGB LED gradually
+    fades in and out in green. If the sequence is incorrect, 
+    the RGB LED turns red. After a short pause, the game 
+    generates a new random sequence and starts another round.
+  </p>
+
+  <h2>Questions</h2>
+
+  <h3>1. PWM Waveform for analogWrite() Values of 64, 128, and 255</h3>
+
+  <p>Arduino uses Pulse Width Modulation (PWM) to simulate 
+    different brightness levels.
+  </p>
+
+  <p>Instead of continuously changing the voltage, PWM switches 
+    the output between HIGH and LOW very quickly. The duty cycle 
+    determines the proportion of time the output remains HIGH.
+  </p>
+
+  <p>For an 8-bit PWM output, the approximate duty cycle is calculated as:</p>
+
+  <p><strong>Duty Cycle = analogWrite Value / 255 × 100%</strong></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>analogWrite() Value</th>
+        <th>Approximate Duty Cycle</th>
+        <th>Expected Brightness</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>64</td>
+        <td>25%</td>
+        <td>Low</td>
+      </tr>
+      <tr>
+        <td>128</td>
+        <td>50%</td>
+        <td>Medium</td>
+      </tr>
+      <tr>
+        <td>255</td>
+        <td>100%</td>
+        <td>Maximum</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <figure>
+    <img src="images/a2_pwm_graph.png" alt="Theoretical PWM waveforms at 25, 50 and 100 percent duty cycles">
+
+    <figcaption>Figure 7. Theoretical PWM waveforms across 
+      the RGB green LED for analogWrite() values of 64, 
+      128, and 255. The waveforms use the measured forward 
+      voltage of 2.54V and show approximately 25%, 50%, 
+      and 100% duty cycles.</figcaption>
+  </figure>
+
+  <p>At a value of 64, the LED receives pulses with an 
+    approximately 25% duty cycle. At 128, the duty cycle 
+    is approximately 50%. At 255, the output remains HIGH. 
+    Based on my measurement, the voltage across the green 
+    LED is approximately 2.54V when it is on and 0V when 
+    it is off. This is how I created the green fading effect. 
+    By gradually increasing and decreasing the PWM value, 
+    I could change the LED's apparent brightness without 
+    using an additional component.
+  </p>
+
+  <h3>2. Total Current and Battery Life</h3>
+
+  <p>To estimate the current required by the LEDs, 
+    I used the expected current values from my resistor calculations.
+  </p>
+
+  <p>If all six LED channels were illuminated simultaneously at 
+    full brightness, the theoretical total LED current would be:
+  </p>
+
+  <p>8.18 + 8.79 + 8.18 + 9.09 + 8.18 + 8.18</p>
+
+  <p><strong>Total LED current ≈ 50.60mA</strong></p>
+
+  <p>This represents a theoretical maximum for the six LED channels 
+    under the assumed forward voltages, not the normal current 
+    draw of the game. The actual game usually illuminates 
+    only one game LED at a time, and the RGB LED is used 
+    mainly to show the result.
+  </p>
+
+  <p>For a simplified battery-life calculation using a 1200mAh battery:</p>
+
+  <p>Battery Life = Battery Capacity / Current</p>
+
+  <p>1200mAh / 50.60mA ≈ <strong>23.7 hours</strong></p>
+
+  <p>However, this is only an idealized calculation based on the 
+    LED current. It does not include the Arduino Uno's own 
+    power consumption, voltage regulation losses, or other 
+    factors. Therefore, the actual battery life would be 
+    shorter and would need to be calculated using the measured 
+    total circuit current. I would also need to consider 
+    the Arduino's individual pin and overall current limits 
+    before trying to illuminate all six LED channels simultaneously.
+  </p>
+
+  <h3>3. Actual LED Forward Voltage Compared with Theoretical Values</h3>
+
+  <p>For the resistor calculations, I used estimated forward voltages:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>LED Color</th>
+        <th>Estimated Forward Voltage</th>
+        <th>Measured Forward Voltage</th>
+        <th>Difference</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>White</td>
+        <td>3.2V</td>
+        <td>2.83V</td>
+        <td>-0.37V</td>
+      </tr>
+      <tr>
+        <td>Yellow</td>
+        <td>2.1V</td>
+        <td>1.97V</td>
+        <td>-0.13V</td>
+      </tr>
+      <tr>
+        <td>Blue</td>
+        <td>3.2V</td>
+        <td>2.82V</td>
+        <td>-0.38V</td>
+      </tr>
+      <tr>
+        <td>RGB Red</td>
+        <td>2.0V</td>
+        <td>1.85V</td>
+        <td>-0.15V</td>
+      </tr>
+      <tr>
+        <td>RGB Green</td>
+        <td>3.2V</td>
+        <td>2.54V</td>
+        <td>-0.66V</td>
+      </tr>
+      <tr>
+        <td>RGB Blue</td>
+        <td>3.2V</td>
+        <td>2.72V</td>
+        <td>-0.48V</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <figure>
+    <img src="images/a2_voltage_measurements.png" alt="Multimeter measurements of LED forward voltages">
+    <figcaption>Figure 8. Multimeter measurements of the 
+      forward voltage across each illuminated LED, including 
+      the individual red, green, and blue channels of the RGB LED.</figcaption>
+  </figure>
+
+  <p>The theoretical forward voltages are approximate values, and 
+    actual LEDs may have slightly different voltage drops depending 
+    on their characteristics and operating current. By measuring 
+    the voltage across each LED while it is illuminated, 
+    I can compare the actual forward voltage with the estimated 
+    values used in my calculations.
+  </p>
+
+  <p>All six measured forward voltages were lower than the 
+    estimated values used in my resistor calculations. The 
+    largest difference was the RGB green channel, which measured 
+    2.54V compared with the estimated 3.2V, a difference of 0.66V. 
+    The RGB blue channel measured 2.72V, which was 0.48V below the 
+    estimated value. This showed me that typical forward voltage
+    values are useful for planning a circuit, but actual components 
+    can behave differently.</p><p>Using the measured forward voltages,
+    a nominal 5V supply, and the installed resistor values, I can 
+    estimate the current through each channel using I = (5V - 
+    measured forward voltage) / resistance. These are calculated 
+    estimates rather than direct current measurements.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>LED Channel</th>
+        <th>Resistor</th>
+        <th>Estimated Current Using Measured Voltage</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>White</td>
+        <td>220 ohms</td>
+        <td>9.86mA</td>
+      </tr>
+      <tr>
+        <td>Yellow</td>
+        <td>330 ohms</td>
+        <td>9.18mA</td>
+      </tr>
+      <tr>
+        <td>Blue</td>
+        <td>220 ohms</td>
+        <td>9.91mA</td>
+      </tr>
+      <tr>
+        <td>RGB Red</td>
+        <td>330 ohms</td>
+        <td>9.55mA</td>
+      </tr>
+      <tr>
+        <td>RGB Green</td>
+        <td>220 ohms</td>
+        <td>11.18mA</td>
+      </tr>
+      <tr>
+        <td>RGB Blue</td>
+        <td>220 ohms</td>
+        <td>10.36mA</td>
+      </tr></tbody>
+  </table>
+  
+  <p>The total estimated LED current with all six channels 
+    fully on is approximately <strong>58.03mA</strong>, 
+    assuming the output pins supply 5V. This does not include 
+    the Arduino board current. The earlier 50.60mA estimate 
+    and its idealized battery-life calculation were based on 
+    the original theoretical forward voltages.
+  </p>
+
+  <h3>4. Did You Use AI Tools in Completing This Assignment?</h3>
+
+  <p>Yes. I used ChatGPT as a learning, programming, debugging, 
+    and documentation assistant throughout this assignment. 
+    Compared to my previous assignment, I felt more confident 
+    understanding the programming logic. The overall algorithm 
+    for the memory game was relatively straightforward, and I 
+    could understand how the sequence generation, button inputs, 
+    and answer comparison worked. I used ChatGPT to help 
+    develop and review the Arduino code, especially when I needed 
+    to understand unfamiliar functions or troubleshoot problems.
+  </p>
+
+  <p>One of the most useful things I learned through ChatGPT was 
+    how to use <code>random()</code> and <code>randomSeed()</code> 
+    to generate a different LED sequence for each round. ChatGPT 
+    also helped me check resistor calculations, organize the
+    pin connections, test individual components, and structure 
+    the final documentation.
+  </p>
+
+  <p>However, I still needed to build the physical circuit, 
+    test the components, identify the wiring mistakes, and 
+    verify that the program behaved as expected.
+  </p>
+
+  <h3>Reflection on AI Usage</h3>
+
+  <p>I found AI especially useful for learning new programming 
+    concepts and understanding why certain changes were needed. 
+    Instead of only looking for a working solution, I tried to 
+    understand the reason behind each correction. This made 
+    debugging feel more like a learning process. At the same 
+    time, this assignment showed me that AI cannot replace 
+    physical testing. Even when the code appeared correct, 
+    the RGB LED did not display the expected colors because 
+    I had connected the wires incorrectly. The problem was 
+    not something that could be solved by changing the 
+    algorithm alone. I had to examine the circuit, check 
+    the actual LED colors, and correct the connections myself.
+  </p>
+
+  <p>Overall, I felt more confident with programming in 
+    this assignment, but I also learned that physical 
+    circuit organization and careful wiring are equally important.
+  </p>
+
+  <h2>References</h2>
+  <ol>
+    <li>Arduino. Arduino Language Reference. <a href="https://www.arduino.cc/reference/en/">Official Arduino Documentation</a>.</li>
+    <li>Arduino. <a href="https://docs.arduino.cc/language-reference/en/functions/random-numbers/random/">random() Reference</a>.</li>
+    <li>Arduino. <a href="https://docs.arduino.cc/language-reference/en/functions/analog-io/analogWrite/">analogWrite() Reference</a>.</li>
+    <li>OpenAI. (2026). ChatGPT. Programming guidance, circuit debugging, resistor calculation review, and documentation assistance.</li>
+    <li>Documentation: I used AI to help organize the structure of my documentation and explain the Arduino code. 
+      I reviewed the content based on my actual circuit implementation and testing experience.</li>
+  </ol>
+  <p><a href="index.html">Back to Home</a></p>
+
+  <script type="text/plain" id="arduino-source">
+// Store the pins for the three game LEDs.
+int ledPins[3] = {3, 5, 6};
+
+// Store the pins for the three buttons.
+int buttonPins[3] = {2, 4, 7};
+
+// Store the RGB LED pins.
+int redPin = 9;
+int greenPin = 10;
+int bluePin = 11;
+
+// Store the random LED sequence.
+int sequence[3];
+
+// Store the player's button input.
+int playerInput;
+
+// Track whether the player is correct.
+bool correct = true;
+
+// Set up the Arduino pins.
+void setup() {
+  // Set up the three LEDs and buttons.
+  for (int i = 0; i < 3; i++) {
+    // Set each LED as an output.
+    pinMode(ledPins[i], OUTPUT);
+    // Set each button as an input with pull-up.
+    pinMode(buttonPins[i], INPUT_PULLUP);
+  }
+  // Set up the RGB LED pins.
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+  // Start the random number generator.
+  randomSeed(analogRead(A0));
+}
+
+// Run the memory game repeatedly.
+void loop() {
+  // Reset the result for a new round.
+  correct = true;
+  // Turn off the RGB LED.
+  digitalWrite(redPin, LOW);
+  digitalWrite(greenPin, LOW);
+  digitalWrite(bluePin, LOW);
+  // Wait before starting a new round.
+  delay(1500);
+  // Generate three random LED numbers.
+  for (int i = 0; i < 3; i++) {
+    // Choose a random number from 0 to 2.
+    sequence[i] = random(0, 3);
+  }
+  // Show the random LED sequence.
+  for (int i = 0; i < 3; i++) {
+    // Turn on the selected LED.
+    digitalWrite(ledPins[sequence[i]], HIGH);
+    // Keep the LED on for 700 milliseconds.
+    delay(700);
+    // Turn off the selected LED.
+    digitalWrite(ledPins[sequence[i]], LOW);
+    // Pause between LEDs.
+    delay(400);
+  }
+  // Wait before the player starts.
+  delay(500);
+  // Read three button presses.
+  for (int i = 0; i < 3; i++) {
+    // Start with no button selected.
+    playerInput = -1;
+    // Wait until a button is pressed.
+    while (playerInput == -1) {
+      // Check all three buttons.
+      for (int j = 0; j < 3; j++) {
+        // Check if the current button is pressed.
+        if (digitalRead(buttonPins[j]) == LOW) {
+          // Save the pressed button number.
+          playerInput = j;
+          // Light up the matching LED.
+          digitalWrite(ledPins[j], HIGH);
+          // Wait briefly to avoid button bouncing.
+          delay(200);
+          // Turn off the matching LED.
+          digitalWrite(ledPins[j], LOW);
+          // Wait until the button is released.
+          while (digitalRead(buttonPins[j]) == LOW) {
+            // Do nothing while the button is held.
+          }
+          // Stop checking buttons for this input.
+          break;
+        }
+      }
+    }
+    // Compare the input with the random sequence.
+    if (playerInput != sequence[i]) {
+      // Mark the answer as incorrect.
+      correct = false;
+    }
+  }
+  // Check if the player got everything correct.
+  if (correct == true) {
+    // Gradually increase the green brightness.
+    for (int brightness = 0; brightness <= 255; brightness += 5) {
+      // Set the green LED brightness.
+      analogWrite(greenPin, brightness);
+      // Wait to make the fading effect visible.
+      delay(20);
+    }
+    // Gradually decrease the green brightness.
+    for (int brightness = 255; brightness >= 0; brightness -= 5) {
+      // Set the green LED brightness.
+      analogWrite(greenPin, brightness);
+      // Wait to make the fading effect visible.
+      delay(20);
+    }
+  } else {
+    // Turn on the red LED for a wrong answer.
+    digitalWrite(redPin, HIGH);
+    // Keep the red LED on for one second.
+    delay(1000);
+    // Turn off the red LED.
+    digitalWrite(redPin, LOW);
+  }
+  // Wait before starting another round.
+  delay(1000);
+}
+  </script>
+  <script>
+    document.getElementById('arduino-code').textContent = document.getElementById('arduino-source').textContent.trim();
+  </script>
+</body>
+</html>
+
