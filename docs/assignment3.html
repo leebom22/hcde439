@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assignment 3: Smart Nighttime Heating Controller | Bomyung Lee</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+      color: #161616;
+    }
+
+    h2 {
+        margin-top: 45px; 
+    }
+
+    h3 { 
+        margin-top: 25px;
+    }
+
+    img { 
+        display: block; 
+        max-width: 100%; 
+        height: auto; 
+        margin: 20px auto; 
+    }
+
+    figure { 
+        margin: 25px 0; 
+    }
+
+    figcaption { 
+        font-size: 14px; 
+        color: #555; 
+        text-align: center; 
+    }
+
+    table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        margin: 20px 0; 
+    }
+
+    th, td { 
+        border: 1px solid #aaa; 
+        padding: 8px; 
+        text-align: left; 
+        vertical-align: top; 
+    }
+
+    pre { 
+        background-color: #f1f1f1; 
+        padding: 15px; 
+        overflow-x: auto; 
+        font-size: 13px; 
+    }
+
+    code { 
+        font-family: Consolas, 'Courier New', monospace; 
+    }
+
+    .media-placeholder { 
+        border: 2px dashed #aaa; 
+        background: #fafafa; 
+        padding: 38px 18px; 
+        text-align:center; 
+        color:#555; 
+        margin: 20px auto; 
+    }
+
+    .media-placeholder strong { 
+        display:block; 
+        color:#333; 
+    }
+
+    .media-placeholder small { 
+        display:block; 
+        margin-top:8px; 
+    }
+
+    .important { 
+        border-left: 4px solid #8b8b8b; 
+        padding-left: 14px; 
+    }
+
+    .table-wrap { 
+        overflow-x: auto; 
+    }
+
+    .source-note { 
+        color:#555; 
+        font-size:14px; 
+    }
+
+    .footnote {
+        font-size:14px; 
+        color:#555;
+    }
+
+  </style>
+</head>
+
+<body>
+  <h1>Assignment 3: Smart Nighttime Heating Controller</h1>
+
+  <p>HCDE 439 - Physical Computing | Bomyung Lee | 10.26.26</p>
+
+  <p>An Automatic Heating Switch Prototype Using a Thermistor, PWM LED, and Servo Motor</p>
+
+  <h2>Project Overview</h2>
+
+  <p>For this assignment, I built a smart-home heating controller that 
+    reacts to changes in its surroundings. The system uses a thermistor 
+    in a voltage divider to measure temperature-related resistance changes, 
+    a red LED to show heating intensity, and an SG90 servo motor to 
+    represent a physical heating switch.</p>
+
+  <p>My concept is a nighttime heating system that turns on when a room gets
+    too cold and switches off once it is warm enough. This is a working 
+    interaction prototype rather than a real heater. For a short demonstration,
+    I treated room temperature as the simulated cold condition and warmed 
+    the sensor with my fingers to simulate a warmer environment. 
+    In an earlier experiment, the room measured about 23.7°C, so "cold" 
+    here describes the experimental condition rather than an actual 
+    uncomfortable room temperature.</p>
+
+  <h3>System Behavior</h3>
+
+  <div class="table-wrap"><table>
+    <thead>
+        <tr>
+            <th>Condition</th>
+            <th>Thermistor reading</th>
+            <th>LED response</th>
+            <th>Servo response</th>
+        </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>Simulated cold (room temperature)</td>
+        <td>ADC ≤ 510</td>
+        <td>Heating indicator ON</td>
+        <td>180°: HEATING ON</td>
+      </tr>
+      <tr>
+        <td>Transition zone</td>
+        <td>ADC 511–549</td>
+        <td>Brightness follows sensor value while heating stays ON</td>
+        <td>Keeps previous ON/OFF state</td>
+      </tr>
+      <tr>
+        <td>Simulated warm (hand warming)</td>
+        <td>ADC ≥ 550</td>
+        <td>LED OFF</td>
+        <td>0°: HEATING OFF</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <h2>Circuit Schematic</h2>
+
+  <figure>
+    <img src="images/a3_schematic.png" 
+    alt="Electrical schematic showing a thermistor over a 10k ohm resistor 
+    forming a voltage divider connected to A0, a red LED with 330 ohm resistor 
+    from D5 to ground, and an SG90 servo powered by 5V with D8 signal and common ground">
+
+    <figcaption>
+        Figure 1. Final circuit schematic. A thermistor (R1) 
+        is connected to 5V, a fixed 10 kΩ resistor (R2) is connected 
+        to GND, and their junction feeds A0. D5 controls a red LED through 
+        a 330 Ω resistor. The servo uses 5V, GND and D8. All components 
+        share Arduino ground.
+    </figcaption>    
+  </figure>
+
+  <p>The schematic matches the final tested circuit, not the earlier 
+    LCD or seven-segment display attempts. A0 measures the voltage 
+    divider junction, D5 provides PWM brightness control for the red LED,
+    and D8 controls the servo position.</p>
+
+  <h3>Pin Connections</h3>
+  <div class="table-wrap"><table>
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th>Connection</th>
+            <th>Value / Purpose</th>
+        </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>NTC thermistor (R1)</td>
+        <td>5V → thermistor → A0 junction</td>
+        <td>Variable resistance when temperature changes</td>
+      </tr>
+      <tr>
+        <td>Fixed resistor (R2)</td>
+        <td>A0 junction → resistor → GND</td>
+        <td>10 kΩ; forms voltage divider</td>
+      </tr>
+      <tr>
+        <td>Red LED</td>
+        <td>D5 → 330 Ω resistor → LED anode (+); cathode (−) → GND</td>
+        <td>PWM heating intensity indicator</td>
+      </tr>
+      <tr>
+        <td>SG90 signal (orange)</td>
+        <td>Arduino D8</td>
+        <td>180° = ON; 0° = OFF</td>
+      </tr>
+      <tr>
+        <td>SG90 power (red)</td>
+        <td>Arduino 5V</td>
+        <td>Servo power during prototype test</td>
+      </tr>
+      <tr>
+        <td>SG90 ground (brown)</td>
+        <td>Arduino GND</td>
+        <td>Common ground</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+  <h2>Voltage Divider and Resistor Calculations</h2>
+
+  <h3>Choosing the 10 kΩ Fixed Resistor</h3>
+
+  <p>I chose a 10 kΩ resistor because it is close to the 
+    thermistor's inferred resistance at room temperature. 
+    Using similar upper and lower resistances gives a voltage
+    near half the 5V supply and makes increases or decreases 
+    in sensor resistance easy to detect. The exact thermistor 
+    model and temperature coefficient were not verified, 
+    so I used actual ADC readings rather than claiming 
+    precise temperatures in °C.</p>
+
+  <figure>
+    <img src="images/a3_calculations.png">
+
+    <figcaption>
+        Figure 2. Calculation to get a resistance of thermistor
+    </figcaption> 
+  </figure>
+
+  <p><strong>Voltage divider formula:</strong> V<sub>out</sub> = V<sub>in</sub> × R2 / (R1 + R2)</p>
+
+  <p>With the thermistor as R1 (top), 10 kΩ as R2 (bottom), and approximately 5V supplied by the Arduino:</p>
+
+  <p><strong>V<sub>out</sub> = 5 × 10,000 / (R<sub>thermistor</sub> + 10,000)</strong></p>
+
+  <p>Using the 10-bit ADC reading: <strong>V<sub>out</sub> ≈ ADC × 5 / 1023</strong>. 
+    Rearranging the voltage-divider equation gives <strong>R<sub>thermistor</sub> = 10,000 × (1023 / ADC − 1)</strong>.</p>
+
+  <div class="table-wrap"><table>
+    <thead>
+        <tr>
+            <th>Actual recorded condition</th>
+            <th>ADC</th>
+            <th>Calculated V<sub>out</sub></th>
+            <th>Inferred R1</th>
+        </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>Room-temperature reading (1.016 s)</td>
+        <td>501</td>
+        <td>501 × 5 / 1023 ≈ 2.449 V</td>
+        <td>10,000 × (1023 / 501 − 1) ≈ 10.42 kΩ</td>
+      </tr>
+
+      <tr>
+        <td>Warmest logged reading (20.561 s)</td>
+        <td>590</td>
+        <td>590 × 5 / 1023 ≈ 2.884 V</td>
+        <td>10,000 × (1023 / 590 − 1) ≈ 7.34 kΩ</td>
+    </tr>
+    </tbody>
+
+  </table></div>
+
+  <p>These values show why the fixed 10 kΩ resistor is appropriate 
+    for the observed range. When the NTC thermistor warms, 
+    R1 decreases and V<sub>out</sub> increases. 
+    The ADC-derived voltages assume a 5V reference; 
+    they are calculated estimates, not separate multimeter 
+    measurements.</p>
+
+  <h3>LED Current-Limiting Resistor</h3>
+
+  <p>I used a 330 Ω resistor in series with the red LED. 
+    Assuming a red LED forward voltage of about 2.0V and a target 
+    current near 10mA, the ideal resistance is <strong>R = (5 − 2.0) / 0.010 = 300 Ω</strong>. 
+    I selected the available 330 Ω resistor to limit the estimated 
+    full-on current to <strong>I = (5 − 2.0) / 330 ≈ 9.1mA</strong>. 
+    The real current depends on the actual LED forward voltage and supply.</p>
+
+  <h3>Choosing the Threshold and PWM Values</h3>
+
+  <p>During earlier tests, room-temperature ADC readings were 
+    typically around 485–498, while warming the thermistor with 
+    my fingers raised the reading to approximately 574. I used 
+    a lower ON threshold of <strong>510 (≈ 2.493V)</strong> 
+    and an upper OFF threshold of <strong>550 (≈ 2.688V)</strong>, 
+    both between those observed conditions. The gap is intentional: 
+    the heater keeps its previous state between the thresholds, 
+    preventing the servo from constantly switching near one cutoff.</p>
+
+  <p>For the red LED, <code>map(sensorValue, 490, 550, 255, 0)</code> 
+    makes a lower ADC value correspond to brighter output. 
+    The input bounds correspond to approximately <strong>2.395V</strong> 
+    and <strong>2.688V</strong> at A0, and the output range 
+    255 to 0 is the UNO's 8-bit PWM brightness range. 
+    <code>constrain()</code> keeps values between 0 and 255, 
+    and the LED is forced OFF whenever heating is OFF. 
+    These are demonstration thresholds based on the measured response, 
+    not calibrated thermostat temperatures.</p>
+
+  <p>I originally used D9 for the red LED, but moved it to 
+    <strong>D5</strong> because Arduino's Servo library disables 
+    PWM on D9 and D10 on the UNO. The servo signal uses D8. 
+    This preserves <code>analogWrite()</code> for the LED without 
+    conflict.</p>
+
+  <h2>Circuit Implementation</h2>
+
+  <p>I assembled the voltage divider on a breadboard and tested it 
+    with the red LED first. The LED dimmed when I warmed the thermistor 
+    and brightened as it cooled, which confirmed the input circuit and 
+    PWM behavior. I then tested the SG90 servo independently: it moved 
+    between 0° and 180°. Finally, I combined both working parts into 
+    the completed controller.</p>
+  
+    <figure>
+        <img src="images/a3_overall_circuit.png"
+            alt="Complete heating controller circuit">
+
+        <figcaption>
+            Figure 3. Complete circuit with the Arduino Uno,
+            thermistor voltage divider, red LED, and SG90 servo motor.
+        </figcaption>
+    </figure>
+
+    <figure>
+        <img src="images/a3_arduino_Uno.png"
+            alt="Arduino Uno and circuit connections">
+
+        <figcaption>
+            Figure 4. Close-up of the Arduino connections.
+            A0 reads the voltage divider, D5 controls the LED
+            through a 330-ohm resistor, and D8 controls the servo.
+        </figcaption>
+    </figure>
+
+    <figure>
+        <img src="images/a3_heater_on.png"
+            alt="Heating controller in ON state">
+
+        <figcaption>
+            Figure 5. Heating ON during the simulated cold condition.
+            The LED indicates heating intensity, and the servo
+            represents the activated heating switch.
+        </figcaption>
+    </figure>
+
+    <figure>
+        <img src="images/a3_heater_off.png"
+            alt="Heating controller in OFF state">
+
+        <figcaption>
+            Figure 6. Heating OFF after warming the thermistor.
+            The LED turns off and the servo moves to the OFF position.
+        </figcaption>
+    </figure>
+
+  <h3>Design Changes and Troubleshooting</h3>
+
+  <p>My original output was an I2C LCD1602 panel meant to 
+    display temperature readings and heating status. 
+    Although the LCD showed correct text intermittently, 
+    I repeatedly encountered corrupted characters, lost I2C responses, 
+    and occasions when Serial Monitor output stopped. 
+    I checked the wiring, replaced jumper wires, scanned the I2C bus 
+    (sometimes finding address 0x27), and tested the thermistor 
+    and LED separately. The sensor and LED worked without the LCD, 
+    but I could not confirm a single cause for the display failures. 
+    I also briefly planned a 16-pin parallel LCD connection without 
+    completing a successful test.</p>
+
+  <p>I next tried a 5641AS four-digit seven-segment display with a 
+    74HC595 shift register, resistors, and P2N2222A transistors. 
+    The wiring became too dense for the available breadboard space, 
+    and I stopped before confirming a working numerical display. 
+    This was a circuit-complexity decision, not proof that the 
+    display was defective.</p>
+
+  <p>I finally changed the output to an SG90 servo motor, 
+    which offered an easier-to-understand physical 
+    representation of a heating switch. It required far fewer connections
+    and let me keep the already-working thermistor and LED circuit. 
+    This process taught me to evaluate reliability, wiring complexity, 
+    and clarity of feedback, not only what a device can display.</p>
+
+  <h2>Firmware</h2>
+
+  <p>The program reads A0 with <code>analogRead()</code>, computes the voltage, 
+    uses <code>if</code>/<code>else if</code> to apply the ON and OFF thresholds, 
+    and uses <code>map()</code> and <code>analogWrite()</code> to control the LED brightness. 
+    It calls <code>servo.write()</code> only when the heating state changes 
+    and reports time, ADC, voltage, PWM, and state to Serial Monitor at 9600 baud 
+    approximately every 500 ms. Every non-empty line of code is preceded 
+    by an explanatory comment.</p>
+
+  <p>The source below is the final code used for the successful experiment. 
+    The Servo library and Arduino language reference are credited in the 
+    References section.</p>
+    
+  <h3>Arduino Code</h3>
+
+  <pre><code id="arduino-code"></code></pre>
+
+  <h2>Circuit in Operation</h2>
+  
+  <figure>
+    <img src="images/Input_Output video.gif">
+
+    <figcaption>Figure 8. Operation of the completed heating controller. 
+        At the simulated cold condition, the LED is lit and the servo indicates ON. 
+        Warming the thermistor dims the LED and switches the servo to OFF. C
+        ooling the thermistor returns the system to ON.</figcaption>
+  </figure>
+
+  <p>The servo represents a heating switch only: the circuit does 
+    not power an actual heater. The experiment responds to environmental 
+    warmth but does not detect nighttime or provide calibrated Celsius measurements.</p>
+
+  <h3>Serial Monitor Output</h3>
+
+  <p>In my final test, Serial Monitor recorded 99 readings over roughly 50 seconds. 
+    The excerpt below includes both automatic state changes. 
+    The full log is available as a CSV file: 
+    <a href="data/a3_serial_data.csv" download>Download all recorded Serial Monitor data</a>.</p>
+
+  <pre><code>SMART NIGHTTIME HEATING CONTROLLER
+Time(ms) | ADC | Voltage(V) | PWM | Heating
+1016 | 501 | 2.449 | 209 | ON
+19058 | 549 | 2.683 | 5 | ON
+19559 | 571 | 2.791 | 0 | OFF
+20561 | 590 | 2.884 | 0 | OFF
+36094 | 511 | 2.498 | 0 | OFF
+36595 | 509 | 2.488 | 175 | ON
+50127 | 502 | 2.454 | 204 | ON</code></pre>
+
+  <p>The system switched OFF at <strong>19.559 seconds</strong> 
+    when ADC reached 571, and ON again at <strong>36.595 seconds</strong>
+    when ADC fell to 509. The peak recorded value was 590 (about 2.884V) 
+    at 20.561 seconds.</p>
+
+  <h2>Questions</h2>
+
+  <h3>1. Can the Variable Resistor Be Either R1 or R2?</h3>
+
+  <p><strong>Yes.</strong> The thermistor can be placed above 
+    or below the measuring junction. Its position changes the 
+    direction of the output voltage response, so the firmware 
+    must interpret the ADC reading accordingly.</p>
+
+  <p><strong>My circuit (thermistor = R1 on top, 10 kΩ = R2 on bottom):</strong>
+    <br>V<sub>out</sub> = 5 × 10 / (R<sub>therm</sub> + 10), using resistances in kΩ.</p>
+
+  <p>At the inferred room-temperature resistance of 10.42 kΩ: 
+    <strong>5 × 10 / (10.42 + 10) ≈ 2.449V</strong>.<br>At the inferred warm resistance of 7.34 kΩ: <strong>5 × 10 / (7.34 + 10) ≈ 2.884V</strong>.</p>
+
+  <p><strong>If swapped (10 kΩ = R1 on top, thermistor = R2 on bottom):</strong>
+    <br>V<sub>out</sub> = 5 × R<sub>therm</sub> / (10 + R<sub>therm</sub>).</p>
+
+  <p>With 10.42 kΩ at room temperature:
+    <strong>5 × 10.42 / (10 + 10.42) ≈ 2.551V</strong>.<br>With 7.34 kΩ when warm: <strong>5 × 7.34 / (10 + 7.34) ≈ 2.116V</strong>.</p>
+
+  <p>With the thermistor on top, the voltage increases as it warms. 
+    With the thermistor on the bottom, it decreases. Either layout works, 
+    but the threshold comparisons and LED mapping would need to be reversed 
+    if I swapped the resistors.</p>
+
+  <h3>2. Time vs. Voltage Graph</h3>
+  <figure>
+    <img src="images/a3_voltage_graph.png" alt="Recorded voltage at A0 against elapsed seconds, 
+    showing heating OFF at 19.559 seconds, peak voltage 2.884 volts, and heating ON at 36.595 seconds">
+
+    <figcaption>Figure 4. Time versus calculated voltage at V-measure (A0), 
+        using all 99 readings from Serial Monitor. The voltage increases when 
+        I warm the thermistor, reaches 2.884V, and decreases after I release it. 
+        Dashed vertical lines mark the observed HEATING OFF and HEATING ON transitions. 
+        The graph uses V = ADC × 5 / 1023.</figcaption>
+  </figure>
+  
+  <p>At first the voltage stayed close to 2.44–2.45V. It rose rapidly as 
+    I warmed the thermistor, crossing the OFF threshold and turning the servo to 0°. 
+    Once I released the sensor, the voltage gradually decreased, crossing the ON 
+    threshold and returning the servo to 180°. The two distinct thresholds prevent 
+    constant on/off switching around a single value.</p>
+
+  <p class="source-note">Note: This graph represents the logged test run. 
+    When inserting the demonstration video, the two must show the same physical behavior. 
+    If the video is from a different run, it should be identified as a separate 
+    demonstration rather than claimed as a frame-by-frame match to this log.</p>
+
+  <h3>3. What Would Change With 16-bit analogRead() and 10-bit analogWrite()?</h3>
+
+  <p>Currently, the Arduino UNO's ADC is 10-bit (<strong>0–1023</strong>) 
+    and PWM is 8-bit (<strong>0–255</strong>). With a hypothetical 16-bit 
+    ADC and 10-bit PWM, the possible input and output ranges would be 
+    <strong>0–65535</strong> and <strong>0–1023</strong>.</p>
+
+  <p>A full-range inverse mapping would therefore be <code>map(sensorValue, 0, 65535, 1023, 0)</code>. 
+    However, my project currently maps only a narrow ADC window (490–550), 
+    so to keep similar behavior I would scale those input limits as well:</p>
+
+  <pre><code>// Map equivalent 16-bit thermistor readings to 10-bit LED PWM.
+int brightness = map(sensorValue, 31390, 35234, 1023, 0);
+
+// Keep the brightness inside the new 10-bit PWM range.
+brightness = constrain(brightness, 0, 1023);</code></pre>
+
+  <p>The values 31390 and 35234 are approximately 490 × 65535 / 1023 and 550 × 65535 / 1023. 
+    The switching thresholds of 510 and 550 would similarly change to approximately 
+    <strong>32671</strong> and <strong>35234</strong>. This is a hypothetical change; 
+    the actual Arduino UNO and tested circuit still use 10-bit ADC readings and 8-bit PWM.</p>
+
+  <h2>Limitations and Reflection</h2>
+
+  <p>This assignment was honestly much more stressful and time-consuming than I expected.
+    My original plan was to use an LCD to display the temperature readings and 
+    heating status, but the LCD became the biggest challenge of the entire project. 
+    Sometimes it displayed the correct information, which made me think I had finally 
+    solved the problem, but then it would suddenly show corrupted characters or stop 
+    responding altogether. I repeatedly checked the wiring, replaced jumper wires, 
+    tested different code, and ran I2C scans and diagnostic programs. 
+    What frustrated me the most was that I could never identify one clear cause of the problem. 
+    Every time I thought I had made progress, something would go wrong again. 
+    I even attempted to switch to a 16-pin parallel LCD connection before eventually 
+    deciding to try a different output device.</p>
+
+  <p>My second attempt was a four-digit seven-segment display (5641AS). I initially thought 
+    displaying only numbers would be easier than using an LCD, but I quickly realized how 
+    complicated the wiring would become. Between the shift register, resistors, transistors, 
+    and jumper wires, my breadboard became extremely crowded, and I was worried about making 
+    even more mistakes. At that point, I seriously considered abandoning the entire project 
+    and starting over. However, I had already spent so much time building and testing the 
+    thermistor and LED circuit, and those components were working perfectly. I did not want 
+    all that effort to go to waste. Instead, I reconsidered the purpose of my project and 
+    realized that I did not necessarily need a display to communicate whether the heating 
+    system was on or off. I eventually decided to use a servo motor, which made the circuit 
+    much simpler while still achieving my original goal.</p>
+
+    <p>Although my final Smart Nighttime Heating Controller successfully responds to 
+        temperature changes, it still has several limitations. The servo only simulates 
+        a heating switch rather than controlling a real heater, and the thermistor 
+        readings are not calibrated to actual temperatures in Celsius. 
+        For the demonstration, I used room temperature as the simulated cold condition 
+        and my hand to represent a warmer environment because I could not quickly change 
+        the temperature of an entire room. The system also does not actually detect 
+        nighttime or allow users to select their preferred temperature. 
+        In the future, I would like to add temperature calibration and adjustable 
+        settings to make the prototype more realistic. Despite these limitations, 
+        I felt genuinely relieved when the final circuit worked as intended. 
+        This experience taught me that prototyping is not always about making 
+        a design more complicated. Sometimes, stepping away from an approach that 
+        is not working and finding a simpler solution is the most important part 
+        of the design process.</p>
+
+  <h2>References</h2>
+  <ol>
+    <li>Arduino. <a href="https://www.arduino.cc/reference/en/">Arduino Language Reference</a>. Used for <code>analogRead()</code>, <code>analogWrite()</code>, <code>map()</code>, and program structure.</li>
+    <li>Arduino. <a href="https://github.com/arduino-libraries/Servo/blob/master/docs/readme.md">Servo Library Documentation</a>. Used for servo actuation and UNO PWM pin compatibility.</li>
+    <li>SparkFun. <a href="https://learn.sparkfun.com/tutorials/voltage-dividers/all">Voltage Dividers Tutorial</a>. Referenced for the voltage-divider equation.</li>
+    <li>OpenAI. (2026). ChatGPT. <a href="https://chatgpt.com/share/6ae01915-0730-83e8-95d6-6784ebc6cbb8">Chat</a> to help debug the LCD and display iterations, review Arduino code, check circuit calculations, generate the recorded-data graph, and organize documentation. I assembled and tested the circuit and verified the resulting behavior.</li>
+  </ol>
+  <p><a href="index.html">Back to Home</a></p>
+
+  <script type="text/plain" id="arduino-source">// Include the Servo library for physical output control.
+#include <Servo.h>
+
+// Create the servo motor object.
+Servo heatingServo;
+
+// Define the red LED PWM output pin.
+const int redLedPin = 5;
+
+// Define the servo motor signal pin.
+const int servoPin = 8;
+
+// Define the thermistor input pin.
+const int thermistorPin = A0;
+
+// Define the ADC threshold for turning heating ON.
+const int heatingOnThreshold = 510;
+
+// Define the ADC threshold for turning heating OFF.
+const int heatingOffThreshold = 550;
+
+// Store the current heating state.
+bool heatingOn = false;
+
+// Store the last heating state sent to the servo.
+bool previousHeatingState = false;
+
+// Run the setup function once at startup.
+void setup() {
+  // Start serial communication at 9600 baud.
+  Serial.begin(9600);
+
+  // Configure the LED pin as an output.
+  pinMode(redLedPin, OUTPUT);
+
+  // Start with the red LED turned off.
+  analogWrite(redLedPin, 0);
+
+  // Attach the servo motor to Arduino pin 8.
+  heatingServo.attach(servoPin);
+
+  // Set the initial servo position to heating OFF.
+  heatingServo.write(0);
+
+  // Print the project title to Serial Monitor.
+  Serial.println("SMART NIGHTTIME HEATING CONTROLLER");
+
+  // Print the column headers for recorded data.
+  Serial.println("Time(ms) | ADC | Voltage(V) | PWM | Heating");
+
+  // Allow the servo to reach its initial position.
+  delay(1000);
+}
+
+// Repeat the temperature monitoring process.
+void loop() {
+  // Read the thermistor voltage divider.
+  int sensorValue = analogRead(thermistorPin);
+
+  // Convert the 10-bit ADC reading into voltage.
+  float voltage = sensorValue * (5.0 / 1023.0);
+
+  // Turn heating ON when the sensor is sufficiently cool.
+  if (sensorValue <= heatingOnThreshold) {
+    // Save the heating ON state.
+    heatingOn = true;
+  }
+
+  // Turn heating OFF when the sensor becomes warm.
+  else if (sensorValue >= heatingOffThreshold) {
+    // Save the heating OFF state.
+    heatingOn = false;
+  }
+
+  // Calculate LED brightness based on sensor value.
+  int brightness = map(sensorValue, 490, 550, 255, 0);
+
+  // Keep LED brightness within the valid PWM range.
+  brightness = constrain(brightness, 0, 255);
+
+  // Check whether heating is currently OFF.
+  if (heatingOn == false) {
+    // Turn off the LED when heating is OFF.
+    brightness = 0;
+  }
+
+  // Apply the calculated brightness to the LED.
+  analogWrite(redLedPin, brightness);
+
+  // Check whether the heating state has changed.
+  if (heatingOn != previousHeatingState) {
+    // Check whether heating has just turned ON.
+    if (heatingOn == true) {
+      // Rotate the servo to the heating ON position.
+      heatingServo.write(180);
+    }
+
+    // Handle the transition to heating OFF.
+    else {
+      // Rotate the servo to the heating OFF position.
+      heatingServo.write(0);
+    }
+
+    // Remember the latest heating state.
+    previousHeatingState = heatingOn;
+  }
+
+  // Print the elapsed time in milliseconds.
+  Serial.print(millis());
+
+  // Print the ADC column separator.
+  Serial.print(" | ");
+
+  // Print the raw thermistor reading.
+  Serial.print(sensorValue);
+
+  // Print the voltage column separator.
+  Serial.print(" | ");
+
+  // Print the calculated sensor voltage.
+  Serial.print(voltage, 3);
+
+  // Print the PWM column separator.
+  Serial.print(" | ");
+
+  // Print the LED brightness value.
+  Serial.print(brightness);
+
+  // Print the heating state column separator.
+  Serial.print(" | ");
+
+  // Check the current heating state for serial output.
+  if (heatingOn == true) {
+    // Print ON when heating is active.
+    Serial.println("ON");
+  }
+
+  // Handle the heating OFF state.
+  else {
+    // Print OFF when heating is inactive.
+    Serial.println("OFF");
+  }
+
+  // Wait half a second before the next reading.
+  delay(500);
+}
+
+</script>
+  <script>
+    document.getElementById('arduino-code').textContent =
+      document.getElementById('arduino-source').textContent.trim();
+  </script>
+</body>
+</html>
