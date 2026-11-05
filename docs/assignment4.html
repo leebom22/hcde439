@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Assignment 4: Pocket Smilely | Bomyung Lee</title>
+        <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+            line-height: 1.6;
+            color: #161616;
+        }
+
+        h2 {
+            margin-top: 45px; 
+        }
+
+        h3 { 
+            margin-top: 25px;
+        }
+
+        img { 
+            display: block; 
+            max-width: 100%; 
+            height: auto; 
+            margin: 20px auto; 
+        }
+
+        figure { 
+            margin: 25px 0; 
+        }
+
+        figcaption { 
+            font-size: 14px; 
+            color: #555; 
+            text-align: center; 
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0; 
+        }
+
+        th, td { 
+            border: 1px solid #aaa; 
+            padding: 8px; 
+            text-align: left; 
+            vertical-align: top; 
+        }
+
+        pre { 
+            background-color: #f1f1f1; 
+            padding: 15px; 
+            overflow-x: auto; 
+            font-size: 13px; 
+        }
+
+        code { 
+            font-family: Consolas, 'Courier New', monospace; 
+        }
+
+        .media-placeholder { 
+            border: 2px dashed #aaa; 
+            background: #fafafa; 
+            padding: 38px 18px; 
+            text-align:center; 
+            color:#555; 
+            margin: 20px auto; 
+        }
+
+        .media-placeholder strong { 
+            display:block; 
+            color:#333; 
+        }
+
+        .media-placeholder small { 
+            display:block; 
+            margin-top:8px; 
+        }
+
+        .important { 
+            border-left: 4px solid #8b8b8b; 
+            padding-left: 14px; 
+        }
+
+        .table-wrap { 
+            overflow-x: auto; 
+        }
+
+        .source-note { 
+            color:#555; 
+            font-size:14px; 
+        }
+
+        .footnote {
+            font-size:14px; 
+            color:#555;
+        }
+  </style>
+</head>
+
+<body>
+    <h1>Assignment 4: Pocket Smilely</h1>
+    
+    <p>HCDE 439 - Physical Computing | Bomyung Lee | 11.03.26</p>
+
+    <p>An Interactive Virtual Pet with an LED Matrix, Joystick, Button, and Buzzer</p>
+
+    <h2>Project Overview</h2>
+    
+    <p>For this assignment, I created Pocket Smilely, a small interactive virtual pet 
+        inspired by Tamagotchi.</p>
+
+    <p>In a previous project, I experimented with a small OLED display to create 
+        a simple interactive character. When I learned that I could create something 
+        similar using an 8×8 LED matrix, I wanted to explore how I could turn it into 
+        a more playful experience. Inspired by Tamagotchi, I decided to design 
+        a virtual pet that users could interact with and take care of, almost like a small game.
+        Although the 8×8 LED matrix has limited space for detailed expressions, 
+        I wanted to see how much personality I could give the character using only a few pixels. 
+        I designed four facial expressions: happy, neutral, sad, and sleeping. 
+        I also used a joystick and a push button to let users play with the pet, 
+        feed it, and put it to sleep.</p>
+
+    <p>One thing I was especially excited about was adding sound. In my previous project, 
+        I had not been able to include audio feedback, but this time I used a passive buzzer 
+        to create different sounds for the pet's interactions. Even though Pocket Smilely does not 
+        have as many features as an actual Tamagotchi game, the combination of facial expressions, 
+        physical controls, and sound made the experience feel more like playing a game rather than 
+        simply interacting with an electronic circuit.</p>
+        
+    <p>Through this project, I wanted to explore how simple electronic components could work together 
+        to create an interactive character that feels responsive and has its own personality.</p>
+
+    <h3>Interaction Design</h3>
+    
+    <table>
+        <tr>
+            <th>Action</th>
+            <th>Input</th>
+            <th>Response</th>
+            <th>State Change</th>
+        </tr>
+        
+        <tr>
+            <td>Feed</td>
+            <td>Push button on D2</td>
+            <td>Happy reaction and 1047 Hz tone</td>
+            <td>Hunger −25, happiness +5</td>
+        </tr>
+
+        <tr>
+            <td>Play</td>
+            <td>Joystick horizontal movement (A0)</td>
+            <td>Happy reaction and 880 Hz tone</td>
+            <td>Happiness +15, energy −10, hunger +5</td>
+        </tr>
+        
+        <tr>
+            <td>Sleep & Wake</td>
+            <td>Joystick downward movement (A1)</td>
+            <td>Sleep or wake face and corresponding tone</td>
+            <td>Toggle sleeping, energy recovers while asleep</td>
+        </tr>
+        
+        <tr>
+            <td>Time passing</td>
+            <td>Internal timer</td>
+            <td>Face reflects current condition</td>
+            <td>Hunger rises, awake happiness and energy decline</td>
+        </tr>
+    </table>
+
+    <h3>Facial Expressions</h3>
+    
+    <table>
+        <tr>
+            <th>Expression</th>
+            <th>Condition in firmware</th>
+        </tr>
+        
+        <tr>
+            <td>Sleeping</td>
+            <td>Sleeping is true, highest display priority</td>
+        </tr>
+        
+        <tr>
+            <td>Happy</td>
+            <td>Positive reaction for 1 second, or happiness ≥ 70 and hunger ≤ 40</td>
+        </tr>
+        
+        <tr>
+            <td>Sad</td>
+            <td>Hunger ≥ 70, happiness ≤ 30, or energy ≤ 10</td>
+        </tr>
+        
+        <tr>
+            <td>Neutral</td>
+            <td>Other awake conditions</td>
+        </tr>
+    </table>
+    
+    <p>The temporary positive reaction takes priority over the sad 
+        and ordinary happy states while the pet is awake.</p>
+
+    <h2>Circuit Schematic</h2>
+    
+    <figure>
+        <img src="images/a4_circuit_schematic.png">
+        
+        <figcaption>
+            Figure 1. Hand-drawn schematic showing the connections between the Arduino Uno,
+            joystick, MAX7219 LED matrix, push button, and passive buzzer.
+        </figcaption>
+    </figure>
+
+    <h3>Pin Connections</h3>
+    
+    <table>
+        <tr>
+            <th>Component</th>
+            <th>Connection</th>
+            <th>Purpose</th>
+        </tr>
+        
+        <tr>
+            <td>MAX7219 LED matrix DIN</td>
+            <td>D12</td>
+            <td>Serial data</td>
+        </tr>
+        
+        <tr>
+            <td>MAX7219 CLK</td>
+            <td>D11</td>
+            <td>Clock</td>
+        </tr>
+        
+        <tr>
+            <td>MAX7219 CS / LOAD</td>
+            <td>D10</td>
+            <td>Chip select</td>
+        </tr>
+
+        <tr>
+            <td>Joystick VRx</td>
+            <td>A0</td>
+            <td>Horizontal analog input</td>
+        </tr>
+
+        <tr>
+            <td>Joystick VRy</td>
+            <td>A1</td>
+            <td>Vertical analog input</td>
+        </tr>
+        
+        <tr>
+            <td>Feed button</td>
+            <td>D2 and GND</td>
+            <td>INPUT_PULLUP, active LOW</td>
+        </tr>
+        
+        <tr>
+            <td>Passive buzzer signal</td>
+            <td>D8</td>
+            <td>Audio output</td>
+        </tr>
+        
+        <tr>
+            <td>Module power and ground</td>
+            <td>5V and GND as appropriate</td>
+            <td>Shared power reference</td>
+        </tr>
+    </table>
+
+    <h2>Component Values and Calculations</h2>
+    
+    <h3>Joystick Calibration</h3>
+    
+    <p>The Arduino's 10-bit analog-to-digital converter returns readings from 0 to 1023. 
+        Although the theoretical midpoint is near 512, the joystick's actual 
+        resting position can differ. At startup, my program collects 100 readings from 
+        each axis and calculates their average.</p>
+        
+    <p><strong>Calibrated center = sum of 100 readings / 100</strong></p>
+    
+    <p><strong>Sampling delay = 100 × 20 ms = 2000 ms (approximately 2 seconds)</strong></p>
+
+    <table>
+        <tr>
+            <th>Axis</th>
+            <th>Theoretical midpoint</th>
+            <th>Measured center</th>
+            <th>Difference</th>
+            <th>Approximate voltage at 5V reference</th>
+        </tr>
+
+        <tr>
+            <td>X (A0)</td>
+            <td>512</td>
+            <td>508</td>
+            <td>−4</td>
+            <td>508 / 1023 × 5 ≈ 2.483 V</td>
+        </tr>
+
+        <tr>
+            <td>Y (A1)</td>
+            <td>512</td>
+            <td>493</td>
+            <td>−19</td>
+            <td>493 / 1023 × 5 ≈ 2.410 V</td>
+        </tr>
+    </table>
+    
+    <p>These voltages are calculated estimates, not measurements taken with a multimeter. 
+        The measured centers are not hard-coded; the firmware recalibrates at each startup.</p>
+        
+    <h3>Joystick Deadzone</h3>
+    
+    <p>The program uses a deadzone of 200 ADC counts to distinguish intentional movement 
+        from small changes near the calibrated center. For example, an X reading of 750 
+        gives an offset of 750 − 508 = 242, which exceeds the threshold and triggers play. 
+        Horizontal movement is detected when |X offset| &gt; 200. Sleep/wake is triggered 
+        when the Y offset is less than −200. The direction depends on how the joystick is 
+        oriented and wired.</p>
+        
+    <h3>Timing and Other Programmed Values</h3>
+    
+    <table>
+        <tr>
+            <th>Value</th>
+            <th>Purpose and justification</th>
+        </tr>
+        
+        <tr>
+            <td>25 ms</td>
+            <td>Bounce2 debounce interval to reduce multiple detections from one physical button press</td>
+        </tr>
+        
+        <tr>
+            <td>1000 ms</td>
+            <td>Temporary happy expression, long enough to notice after an interaction</td>
+        </tr>
+        
+        <tr>
+            <td>10,000 ms</td>
+            <td>Automatic needs update interval, short enough to observe during testing</td>
+        </tr>
+        
+        <tr>
+            <td>3000 ms</td>
+            <td>Energy recovery interval while sleeping</td>
+        </tr>
+        
+        <tr>
+            <td>0–100</td>
+            <td>Bounded scale for happiness, hunger, and energy</td>
+        </tr>
+        
+        <tr>
+            <td>1047 / 880 / 392 / 784 Hz</td>
+            <td>Distinct feeding, playing, sleeping, and waking audio cues</td>
+        </tr>
+        
+        <tr>
+            <td>150–180 ms</td>
+            <td>Short sound durations for responsive feedback</td>
+        </tr>
+        
+        <tr>
+            <td>LED intensity 4</td>
+            <td>MAX7219 software brightness setting; not a measured current or resistance</td>
+        </tr>
+    </table>
+    
+    <p>These are programmed interaction values rather than resistor calculations. 
+        The MAX7219 module controls its LED array through its driver circuitry. 
+        Any additional physical resistor values must be documented according to the actual circuit, 
+        not assumed.</p>
+
+    <h2>Circuit Implementation</h2>
+    
+    <p>I assembled the components around the Arduino and tested the LED matrix, joystick, 
+        button, and buzzer before combining their behaviors in one program.</p>
+        
+    <figure>
+        <img src="images/a4_overall_circuit.jpg">
+
+        <figcaption>
+            Figure 2. Complete physical circuit of Pocket Smilely, 
+            showing all connected components and the Arduino Uno.
+        </figcaption>
+    </figure>
+    
+    <figure>
+        <img src="images/a4_LED_Matrix_Closeup.jpg">
+            
+        <figcaption>
+            Figure 3. The 8×8 LED matrix displaying Pocket Smilely's happy facial expression.
+        </figcaption>
+    </figure>
+
+    <figure>
+        <img src="images/a4_Joystick_Closeup.jpg">
+            
+        <figcaption>
+            Figure 4. The joystick module used to control playing and sleeping interactions.
+        </figcaption>
+    </figure>
+
+    <figure>
+        <img src="images/a4_Button_Buzzer_Closeup.jpg">
+            
+        <figcaption>
+            Figure 5. The push button used for feeding and the passive buzzer used for audio feedback.
+        </figcaption>
+    </figure>
+
+    <h2>Firmware</h2>
+    
+    <p>I wrote the firmware in the Arduino IDE. LedControl communicates with the MAX7219 display, 
+        while Bounce2 debounces the feeding button. The program also uses analogRead() for joystick input, 
+        tone() for sound, and millis() for non-blocking timing.</p>
+        
+    <h3>How the Code Works</h3>
+    
+    <p><strong>setup()</strong> initializes the matrix and button and calibrates the joystick. 
+       <strong>calibrateJoystick()</strong> averages 100 readings per axis. <strong>showFace()</strong> 
+       draws the pixel expression. <strong>feedPet()</strong>, <strong>playPet()</strong>, 
+       and <strong>toggleSleep()</strong> process interactions. <strong>updateNeeds()</strong> 
+       changes conditions over time. <strong>updateDisplay()</strong> selects a face. 
+       <strong>loop()</strong> continuously reads inputs and updates the pet.</p>
+       
+    <h3>Arduino Code</h3>
+    
+    <p>
+The following is the final commented firmware from the tested project. Each substantive statement has an explanatory comment above it.</p><pre><code>// Include the library for controlling the MAX7219 LED matrix.
+#include &lt;LedControl.h&gt;
+
+// Include the library for debouncing button inputs.
+#include &lt;Bounce2.h&gt;
+
+// Assign analog pin A0 to the joystick X-axis.
+const int JOY_X = A0;
+
+// Assign analog pin A1 to the joystick Y-axis.
+const int JOY_Y = A1;
+
+// Assign digital pin 12 to the LED matrix data input.
+const int DIN_PIN = 12;
+
+// Assign digital pin 11 to the LED matrix clock.
+const int CLK_PIN = 11;
+
+// Assign digital pin 10 to the LED matrix chip select.
+const int CS_PIN = 10;
+
+// Assign digital pin 2 to the feeding button.
+const int BUTTON_PIN = 2;
+
+// Assign digital pin 8 to the passive buzzer.
+const int BUZZER_PIN = 8;
+
+// Set the number of readings used for calibration.
+const int CALIBRATION_SAMPLES = 100;
+
+// Set the joystick movement threshold to 200 ADC counts.
+const int DEADZONE = 200;
+
+// Display positive reactions for 1000 milliseconds.
+const unsigned long REACTION_TIME = 1000;
+
+// Update natural needs every 10000 milliseconds.
+const unsigned long STATUS_INTERVAL = 10000;
+
+// Restore energy every 3000 milliseconds while sleeping.
+const unsigned long REST_INTERVAL = 3000;
+
+// Create a controller for one MAX7219 LED matrix.
+LedControl matrix = LedControl(DIN_PIN, CLK_PIN, CS_PIN, 1);
+
+// Create a debounced button object.
+Bounce2::Button feedButton = Bounce2::Button();
+
+// Store the joystick&#x27;s calibrated horizontal center.
+int centerX = 512;
+
+// Store the joystick&#x27;s calibrated vertical center.
+int centerY = 512;
+
+// Set the pet&#x27;s initial happiness to 70.
+int happiness = 70;
+
+// Set the pet&#x27;s initial hunger to 20.
+int hunger = 20;
+
+// Set the pet&#x27;s initial energy to 70.
+int energy = 70;
+
+// Track whether the pet is sleeping.
+bool sleeping = false;
+
+// Track whether horizontal joystick movement is held.
+bool playHeld = false;
+
+// Track whether downward joystick movement is held.
+bool sleepHeld = false;
+
+// Store the time of the last natural status update.
+unsigned long lastStatusTime = 0;
+
+// Store the time of the last energy recovery update.
+unsigned long lastRestTime = 0;
+
+// Store the time of the last positive interaction.
+unsigned long lastReactionTime = 0;
+
+// Track whether a temporary happy reaction is active.
+bool reacting = false;
+
+// Define the happy facial expression.
+const byte happyFace[8] = {
+  // Leave the first row empty.
+  B00000000,
+  // Leave the second row empty.
+  B00000000,
+  // Draw the upper part of the eyes.
+  B00100100,
+  // Draw the lower part of the eyes.
+  B00100100,
+  // Draw the raised corners of the smile.
+  B01000010,
+  // Draw the curved smile.
+  B00111100,
+  // Leave the seventh row empty.
+  B00000000,
+  // Leave the eighth row empty.
+  B00000000
+};
+
+// Define the sad facial expression.
+const byte sadFace[8] = {
+  // Leave the first row empty.
+  B00000000,
+  // Leave the second row empty.
+  B00000000,
+  // Draw the upper part of the eyes.
+  B00100100,
+  // Draw the lower part of the eyes.
+  B00100100,
+  // Leave space between the eyes and mouth.
+  B00000000,
+  // Draw the upper part of the sad mouth.
+  B00111100,
+  // Draw the downward corners of the mouth.
+  B01000010,
+  // Leave the final row empty.
+  B00000000
+};
+
+// Define the neutral facial expression.
+const byte neutralFace[8] = {
+  // Leave the first row empty.
+  B00000000,
+  // Leave the second row empty.
+  B00000000,
+  // Draw the upper part of the eyes.
+  B00100100,
+  // Draw the lower part of the eyes.
+  B00100100,
+  // Leave space above the mouth.
+  B00000000,
+  // Draw a straight neutral mouth.
+  B00111100,
+  // Leave the seventh row empty.
+  B00000000,
+  // Leave the eighth row empty.
+  B00000000
+};
+
+// Define the sleeping facial expression.
+const byte sleepFace[8] = {
+  // Leave the first row empty.
+  B00000000,
+  // Leave the second row empty.
+  B00000000,
+  // Leave the third row empty.
+  B00000000,
+  // Draw the closed eyes.
+  B01100110,
+  // Leave space below the eyes.
+  B00000000,
+  // Draw the sleeping mouth.
+  B00111100,
+  // Leave the seventh row empty.
+  B00000000,
+  // Leave the eighth row empty.
+  B00000000
+};
+
+// Display a facial expression on the LED matrix.
+void showFace(const byte face[8]) {
+  // Iterate through all eight rows.
+  for (int row = 0; row &lt; 8; row++) {
+    // Send the selected row pattern to the matrix.
+    matrix.setRow(0, row, face[row]);
+  }
+}
+
+// Calibrate the joystick&#x27;s resting position.
+void calibrateJoystick() {
+  // Store the sum of horizontal readings.
+  long sumX = 0;
+
+  // Store the sum of vertical readings.
+  long sumY = 0;
+
+  // Ask the user to keep the joystick centered.
+  Serial.println(&quot;Keep joystick centered!&quot;);
+
+  // Collect 100 readings from each axis.
+  for (int i = 0; i &lt; CALIBRATION_SAMPLES; i++) {
+    // Add the current horizontal reading.
+    sumX += analogRead(JOY_X);
+
+    // Add the current vertical reading.
+    sumY += analogRead(JOY_Y);
+
+    // Wait 20 milliseconds before the next sample.
+    delay(20);
+  }
+
+  // Calculate the average horizontal center.
+  centerX = sumX / CALIBRATION_SAMPLES;
+
+  // Calculate the average vertical center.
+  centerY = sumY / CALIBRATION_SAMPLES;
+
+  // Print the horizontal calibration label.
+  Serial.print(&quot;Center X: &quot;);
+
+  // Print the horizontal calibration result.
+  Serial.println(centerX);
+
+  // Print the vertical calibration label.
+  Serial.print(&quot;Center Y: &quot;);
+
+  // Print the vertical calibration result.
+  Serial.println(centerY);
+}
+
+// Print the pet&#x27;s current internal conditions.
+void printStatus() {
+  // Print the happiness label.
+  Serial.print(&quot;Happiness: &quot;);
+
+  // Print the happiness value.
+  Serial.print(happiness);
+
+  // Print the hunger label.
+  Serial.print(&quot; | Hunger: &quot;);
+
+  // Print the hunger value.
+  Serial.print(hunger);
+
+  // Print the energy label.
+  Serial.print(&quot; | Energy: &quot;);
+
+  // Print the energy value.
+  Serial.print(energy);
+
+  // Print the sleeping status label.
+  Serial.print(&quot; | Sleeping: &quot;);
+
+  // Print whether the pet is sleeping.
+  Serial.println(sleeping ? &quot;YES&quot; : &quot;NO&quot;);
+}
+
+// Start a temporary positive facial reaction.
+void startReaction() {
+  // Enable the temporary reaction.
+  reacting = true;
+
+  // Record the current time.
+  lastReactionTime = millis();
+}
+
+// Feed the virtual pet.
+void feedPet() {
+  // Prevent feeding while the pet is sleeping.
+  if (sleeping) return;
+
+  // Reduce hunger by 25 without going below zero.
+  hunger = max(0, hunger - 25);
+
+  // Increase happiness by 5 without exceeding 100.
+  happiness = min(100, happiness + 5);
+
+  // Start the temporary happy expression.
+  startReaction();
+
+  // Play a 1047 Hz feeding tone for 180 milliseconds.
+  tone(BUZZER_PIN, 1047, 180);
+
+  // Print the feeding event.
+  Serial.println(&quot;FEED!&quot;);
+
+  // Print the updated internal conditions.
+  printStatus();
+}
+
+// Play with the virtual pet.
+void playPet() {
+  // Prevent playing while sleeping or too tired.
+  if (sleeping || energy &lt; 10) return;
+
+  // Increase happiness by 15.
+  happiness = min(100, happiness + 15);
+
+  // Reduce energy by 10.
+  energy = max(0, energy - 10);
+
+  // Increase hunger by 5.
+  hunger = min(100, hunger + 5);
+
+  // Start the temporary happy expression.
+  startReaction();
+
+  // Play an 880 Hz tone for 150 milliseconds.
+  tone(BUZZER_PIN, 880, 150);
+
+  // Print the playing event.
+  Serial.println(&quot;PLAY!&quot;);
+
+  // Print the updated internal conditions.
+  printStatus();
+}
+
+// Switch between sleeping and waking.
+void toggleSleep() {
+  // Reverse the current sleeping state.
+  sleeping = !sleeping;
+
+  // Cancel any temporary happy expression.
+  reacting = false;
+
+  // Reset the energy recovery timer.
+  lastRestTime = millis();
+
+  // Check whether the pet has entered sleep mode.
+  if (sleeping) {
+    // Play a 392 Hz sleeping tone for 180 milliseconds.
+    tone(BUZZER_PIN, 392, 180);
+
+    // Print the sleeping event.
+    Serial.println(&quot;SLEEP!&quot;);
+  }
+  // Handle the waking state.
+  else {
+    // Play a 784 Hz waking tone for 180 milliseconds.
+    tone(BUZZER_PIN, 784, 180);
+
+    // Print the waking event.
+    Serial.println(&quot;WAKE!&quot;);
+  }
+
+  // Print the updated internal conditions.
+  printStatus();
+}
+
+// Update the pet&#x27;s needs based on elapsed time.
+void updateNeeds(unsigned long now) {
+  // Check whether the natural status interval has passed.
+  if (now - lastStatusTime &gt;= STATUS_INTERVAL) {
+    // Record the latest natural status update.
+    lastStatusTime = now;
+
+    // Increase hunger by 10.
+    hunger = min(100, hunger + 10);
+
+    // Check whether the pet is awake.
+    if (!sleeping) {
+      // Reduce happiness by 5.
+      happiness = max(0, happiness - 5);
+
+      // Reduce energy by 5.
+      energy = max(0, energy - 5);
+    }
+
+    // Print the automatic status update event.
+    Serial.println(&quot;TIME UPDATE&quot;);
+
+    // Print the updated internal conditions.
+    printStatus();
+  }
+
+  // Check whether sleeping energy recovery is due.
+  if (sleeping &amp;&amp; now - lastRestTime &gt;= REST_INTERVAL) {
+    // Record the latest recovery time.
+    lastRestTime = now;
+
+    // Restore 10 energy points.
+    energy = min(100, energy + 10);
+
+    // Print the recovery event.
+    Serial.println(&quot;REST +10&quot;);
+
+    // Print the updated internal conditions.
+    printStatus();
+  }
+}
+
+// Select the facial expression based on the pet&#x27;s state.
+void updateDisplay(unsigned long now) {
+  // Check whether the pet is sleeping.
+  if (sleeping) {
+    // Show the sleeping expression.
+    showFace(sleepFace);
+  }
+  // Check whether a positive reaction is still active.
+  else if (reacting &amp;&amp; now - lastReactionTime &lt; REACTION_TIME) {
+    // Show the happy expression temporarily.
+    showFace(happyFace);
+  }
+  // Check whether the pet needs attention.
+  else if (hunger &gt;= 70 || happiness &lt;= 30 || energy &lt;= 10) {
+    // Show the sad expression.
+    showFace(sadFace);
+  }
+  // Check whether the pet is happy and not very hungry.
+  else if (happiness &gt;= 70 &amp;&amp; hunger &lt;= 40) {
+    // Show the happy expression.
+    showFace(happyFace);
+  }
+  // Handle all other awake conditions.
+  else {
+    // Show the neutral expression.
+    showFace(neutralFace);
+  }
+}
+
+// Initialize the hardware and the virtual pet.
+void setup() {
+  // Start serial communication at 9600 baud.
+  Serial.begin(9600);
+
+  // Wake the MAX7219 LED matrix.
+  matrix.shutdown(0, false);
+
+  // Set the LED matrix intensity to level 4.
+  matrix.setIntensity(0, 4);
+
+  // Clear the LED matrix.
+  matrix.clearDisplay(0);
+
+  // Connect the button using the internal pull-up resistor.
+  feedButton.attach(BUTTON_PIN, INPUT_PULLUP);
+
+  // Set the button debounce interval to 25 milliseconds.
+  feedButton.interval(25);
+
+  // Define LOW as the pressed button state.
+  feedButton.setPressedState(LOW);
+
+  // Measure the joystick&#x27;s resting position.
+  calibrateJoystick();
+
+  // Initialize the natural status update timer.
+  lastStatusTime = millis();
+
+  // Initialize the energy recovery timer.
+  lastRestTime = millis();
+
+  // Display the neutral expression during startup.
+  showFace(neutralFace);
+
+  // Print the initial virtual pet conditions.
+  printStatus();
+}
+
+// Continuously process inputs and update the pet.
+void loop() {
+  // Read the current elapsed time.
+  unsigned long now = millis();
+
+  // Update the debounced feeding button state.
+  feedButton.update();
+
+  // Detect a new feeding button press.
+  if (feedButton.pressed()) {
+    // Feed the virtual pet.
+    feedPet();
+  }
+
+  // Read the horizontal joystick offset from its calibrated center.
+  int xOffset = analogRead(JOY_X) - centerX;
+
+  // Read the vertical joystick offset from its calibrated center.
+  int yOffset = analogRead(JOY_Y) - centerY;
+
+  // Check whether the joystick moved horizontally.
+  bool playingNow = abs(xOffset) &gt; DEADZONE;
+
+  // Check whether the joystick moved downward.
+  bool sleepingNow = yOffset &lt; -DEADZONE;
+
+  // Detect a new horizontal joystick movement.
+  if (playingNow &amp;&amp; !playHeld) {
+    // Trigger one playing interaction.
+    playPet();
+  }
+
+  // Remember whether horizontal movement is being held.
+  playHeld = playingNow;
+
+  // Detect a new downward joystick movement.
+  if (sleepingNow &amp;&amp; !sleepHeld) {
+    // Switch the pet between sleeping and waking.
+    toggleSleep();
+  }
+
+  // Remember whether downward movement is being held.
+  sleepHeld = sleepingNow;
+
+  // Update hunger, happiness, and energy over time.
+  updateNeeds(now);
+
+  // Refresh the facial expression.
+  updateDisplay(now);
+}</code>
+</pre>
+
+    <h3>Development and Debugging</h3>
+
+    <p>During the development of Pocket Smilely, I tested each component separately before combining 
+        them into a complete system. Compared to my previous assignments, building the circuit 
+        was much easier because I did not need to connect separate resistors or deal with complicated wiring. 
+        However, I spent quite a bit of time understanding and calculating the values used in the code.</p>
+        
+    <p>I started by testing the LED matrix, followed by the joystick, push button, and passive buzzer. 
+        One important step was calibrating the joystick, since its actual center values (X = 508, Y = 493) 
+        were slightly different from the theoretical value of 512. I also used the Bounce2 library 
+        for button debouncing and millis() to manage the pet's changing conditions over time.</p>
+            
+    <p>Although I struggled a little with debugging, especially when combining the different interactions, 
+        the overall process felt much easier than my previous projects. After adjusting the facial expressions 
+        and testing the final firmware, I was happy to see everything working together as a small interactive game.</p>
+        
+    <h3>Limitations and Future Improvements</h3>
+
+    <p>One limitation of Pocket Smilely was the 8×8 LED matrix. Since it only has 64 pixels, 
+        I found it difficult to create detailed facial expressions or animations. 
+        Although I was able to design four different expressions, I wished I could make the character more expressive 
+        and give it more personality. I also felt that the limited display made it challenging to communicate 
+        the pet's different conditions visually.</p>
+        
+    <p>Another limitation was the amount of time I had to develop the project. I originally wanted to include more 
+        interactions and behaviors, but I had to focus on making the basic functions work properly. 
+        I especially enjoyed experimenting with the passive buzzer because adding sound made Pocket Smilely 
+        feel more like a real game. However, I was disappointed that I did not have enough time to create a 
+        wider variety of sound effects.</p>
+
+    <p>I also realized that adding more features would make the code longer and more complicated, requiring more 
+        testing and debugging. If I have the opportunity to continue developing Pocket Smilely, 
+        I would like to explore new interactions, additional facial expressions, and different sounds. 
+        I think there is still a lot I could do to make this small character feel more alive and interactive.</p>
+
+    <h2>Circuit in Operation</h2>
+
+    <figure>
+        <img src="images/a4_video.gif" >
+            
+        <figcaption>
+            Figure 6. Animated demonstration of the real circuit: feeding, playing, sleeping, waking, 
+            LED expressions, and buzzer responses. The animation must match the documented wiring and firmware.
+            If you want to hear the sound, please go to the following link: <a href="https://drive.google.com/file/d/17op9HK_BaHIRP3IGcQAAjXopR7_322yV/view?usp=sharing">Video</a>
+        </figcaption>
+    </figure>
+
+    <p>The feeding button decreases hunger and briefly shows a happy expression. Horizontal joystick movement 
+        plays with the pet, while downward movement toggles sleeping and waking. When asleep, the pet gradually 
+        recovers energy. Over time, its hunger and other needs change, affecting the displayed expression.</p>
+
+    <figure>
+        <img src="images/a4_Serial_Monitor_1.png" >
+        <img src="images/a4_Serial_Monitor_2.png" >
+            
+        <figcaption>
+            Figure 7, 8. Serial Monitor logs showing joystick calibration, automatic status updates, 
+            feeding, playing, sleeping, waking, and energy recovery.
+        </figcaption>
+    </figure>
+
+    <h2>Additional Questions</h2>
+
+    <h3>1. Servo Motor: Voltage at Pin 9 Over Time</h3>
+
+    <p>In the provided example, the servo position command increases from 0° to 180° in steps of 1°, 
+        with a 100 ms delay after each command. The control signal at D9 is a series of digital pulses, 
+        not a smoothly increasing analog voltage. The voltage switches between approximately 0 V and 5 V, 
+        while the HIGH pulse width changes with the requested angle.</p>
+        
+    <figure>
+        <img src="images/a4_graph.jpg"> 
+        
+        <figcaption>
+            Figure 9. Hand-drawn illustration of the expected servo control pulses at 0°, 90°, and 180° for Question 1.
+        </figcaption>
+    </figure>
+    
+    <p>With the Arduino Servo library's typical default pulse-width mapping, the endpoints are approximately 
+        544 µs for 0° and 2400 µs for 180°. Intermediate positions have intermediate HIGH durations. 
+        The actual values depend on the library configuration. There are 181 commands, so the total
+        programmed delay is <strong>181 × 100 ms = 18,100 ms = 18.1 seconds</strong>, 
+        plus a small amount of processing time. This figure shows zoomed pulse windows, 
+        not every pulse across the entire sweep.</p>
+
+    <h3>2. Handling Erroneous Sensor Readings 1% of the Time</h3>
+    
+    <p>I would use a five-sample median filter to reduce the effect of occasional extreme incorrect readings. 
+        A single outlier has less influence on the middle value than on an average.</p>
+        
+    <pre>
+    <code>FUNCTION readFilteredSensor():
+    readings = empty list
+    REPEAT 5 TIMES:
+        add readSensor() to readings
+    sort readings from smallest to largest
+    RETURN readings[2]</code>
+    </pre>
+    
+    <p>For example, the readings 508, 510, 999, 509, and 507 become 507, 508, 509, 510, 999 after sorting. 
+        The median is 509. This works best when errors are occasional and relatively isolated; 
+        it cannot guarantee correct output when several samples are wrong.</p>
+
+    <h3>3. Handling Random Measurement Noise of ±10%</h3>
+    
+    <p>I would use a moving average filter over the five most recent readings. This smooths random positive 
+        and negative fluctuations, although it can delay responses to real changes.</p>
+
+    <pre>
+    <code>recentReadings = empty list
+    WINDOW_SIZE = 5
+    LOOP:
+    newReading = readSensor()
+    add newReading to recentReadings
+    IF length(recentReadings) &gt; WINDOW_SIZE:
+        remove oldest reading
+    filteredValue = sum(recentReadings) / length(recentReadings)
+    use filteredValue to control the system</code>
+    </pre>
+    
+    <p>If the readings are 480, 530, 490, 520, and 500, their average is (480 + 530 + 490 + 520 + 500) / 5 = 
+        <strong>504</strong>, close to an assumed true value of 500. Both filtering approaches in Questions 
+        2 and 3 are proposed improvements and are <strong>not part of the current Pocket Smilely firmware</strong>.</p>
+
+    <h3>4. AI Tools and Reflection</h3>
+    
+    <p>I used ChatGPT throughout this project as a tool to brainstorm ideas, plan the interactions, 
+        and develop Pocket Smilely. We discussed how to turn a simple 8×8 LED matrix into a small 
+        virtual pet inspired by Tamagotchi and explored which features would be realistic to implement 
+        with the components and time available. ChatGPT also helped me understand how to use different 
+        Arduino libraries, organize the code, troubleshoot issues, and explain the calculations 
+        used in the project. However, I physically assembled the circuit, tested the components, 
+        customized the facial expressions, and verified that the final program worked as intended.</p>
+        
+    <p>Overall, I found AI especially helpful for organizing my ideas and understanding unfamiliar 
+        technical concepts. Rather than simply following its suggestions, I made decisions based on 
+        what I wanted to create and what I could actually implement. The full ChatGPT conversation 
+        is linked in the References section below for anyone interested in seeing the development 
+        process in more detail.</p>
+
+    <h2>References</h2>
+    
+    <ol>
+        <li>Arduino. <a href="https://docs.arduino.cc/language-reference/">Arduino Language Reference</a>. 
+            Functions including analogRead(), millis(), and tone().</li>
+        
+        <li>Arduino. <a href="https://www.arduino.cc/en/Guide/Libraries">Installing Libraries</a>.</li>
+        
+        <li>Wayoda. <a href="https://github.com/wayoda/LedControl">LedControl library</a>. MAX7219 display control.</li>
+        
+        <li>Thomas Fredericks and contributors. <a href="https://github.com/thomasfredericks/Bounce2">Bounce2 library</a>. 
+            Button debouncing.</li><li>Arduino. <a href="https://github.com/arduino-libraries/Servo">Servo library</a>. 
+            Reference for the theoretical servo control signal in Question 1.</li>
+        
+        <li>OpenAI. (2026). ChatGPT. Used for brainstorming, programming support, debugging, and documentation assistance. 
+            Full conversation linked here. <a href="https://chatgpt.com/share/6aec29c4-e1d0-83e8-95a8-a752563ef200">ChatGPT</a></li> 
+    </ol>
+    
+    <p><a href="index.html">Back to Home</a></p>
+</body>
+</html>
