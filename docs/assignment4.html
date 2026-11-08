@@ -277,6 +277,31 @@
     </table>
 
     <h2>Component Values and Calculations</h2>
+
+    
+    <h3>Push Button Current Calculation</h3>
+
+    <p>The feeding button is connected to digital pin D2 and GND using
+        INPUT_PULLUP. This activates the Arduino Uno's internal pull-up
+        resistor, so an additional external resistor is not needed.
+        According to the ATmega328P datasheet, the internal pull-up
+        resistance is approximately 20 kΩ to 50 kΩ. Using Ohm's law
+        (I = V / R) with a 5 V supply, I calculated the current
+        when the button is pressed.</p>
+
+    <p><strong>Maximum current:</strong><br>
+        I = 5 V / 20,000 Ω = 0.00025 A = 0.25 mA</p>
+
+    <p><strong>Minimum current:</strong><br>
+        I = 5 V / 50,000 Ω = 0.00010 A = 0.10 mA</p>
+
+    <p>When the button is pressed, current flows through the internal
+        pull-up resistor to GND. Therefore, the estimated current
+        ranges from 0.10 mA to 0.25 mA. When the button is released,
+        there is no complete path through the button, so the current
+        is approximately zero, excluding small leakage currents. 
+        These values are calculated estimates based on the datasheet,
+        not measurements taken with a multimeter.</p>
     
     <h3>Joystick Calibration</h3>
     
@@ -376,10 +401,11 @@
         </tr>
     </table>
     
-    <p>These are programmed interaction values rather than resistor calculations. 
-        The MAX7219 module controls its LED array through its driver circuitry. 
-        Any additional physical resistor values must be documented according to the actual circuit, 
-        not assumed.</p>
+    <p>The values in the table are programmed settings used to control Pocket Smilely's interactions. 
+        I did not add separate external resistors to the circuit. However, the feeding button uses the
+        Arduino's internal pull-up resistor, and its estimated current is calculated above. 
+        I did not add separate external resistors to the circuit. However, the feeding button 
+        uses the Arduino's internal pull-up resistor, and its estimated current is calculated above.</p>
 
     <h2>Circuit Implementation</h2>
     
@@ -975,7 +1001,7 @@ void loop() {
             
         <figcaption>
             Figure 6. Animated demonstration of the real circuit: feeding, playing, sleeping, waking, 
-            LED expressions, and buzzer responses. The animation must match the documented wiring and firmware.
+            LED expressions, and buzzer responses. 
             If you want to hear the sound, please go to the following link: <a href="https://drive.google.com/file/d/17op9HK_BaHIRP3IGcQAAjXopR7_322yV/view?usp=sharing">Video</a>
         </figcaption>
     </figure>
@@ -996,27 +1022,72 @@ void loop() {
 
     <h2>Additional Questions</h2>
 
+    
     <h3>1. Servo Motor: Voltage at Pin 9 Over Time</h3>
 
-    <p>In the provided example, the servo position command increases from 0° to 180° in steps of 1°, 
-        with a 100 ms delay after each command. The control signal at D9 is a series of digital pulses, 
-        not a smoothly increasing analog voltage. The voltage switches between approximately 0 V and 5 V, 
+    <p>In the provided example, the servo position command increases
+        from 0° to 180° in steps of 1°, with a 100 ms delay after
+        each command. The control signal at D9 is a series of digital
+        pulses rather than a smoothly increasing analog voltage.
+        The voltage switches between approximately 0 V and 5 V,
         while the HIGH pulse width changes with the requested angle.</p>
-        
+
+    <p>According to the Arduino Servo library's official source code
+        (Servo.h), the default minimum pulse width is 544 µs
+        (MIN_PULSE_WIDTH), and the maximum pulse width is 2400 µs
+        (MAX_PULSE_WIDTH). These are the library's default values,
+        not values measured experimentally. When using servo.attach(9) without specifying a different
+        pulse range, the Servo library uses its default minimum and 
+        maximum pulse widths. The following calculations illustrate 
+        the expected pulse widths using linear interpolation between 
+        these values:</p>
+
+    <p><strong>Pulse width = 544 + (angle / 180) × (2400 − 544) µs</strong></p>
+
+    <table>
+        <tr>
+            <th>Servo Angle</th>
+            <th>Calculation</th>
+            <th>HIGH Pulse Width</th>
+        </tr>
+        <tr>
+            <td>0°</td>
+            <td>544 + (0 / 180) × 1856</td>
+            <td>544 µs</td>
+        </tr>
+        <tr>
+            <td>90°</td>
+            <td>544 + (90 / 180) × 1856</td>
+            <td>1472 µs</td>
+        </tr>
+        <tr>
+            <td>180°</td>
+            <td>544 + (180 / 180) × 1856</td>
+            <td>2400 µs</td>
+        </tr>
+    </table>
+
+    <p>The Servo library also defines a refresh interval of
+        20,000 µs (20 ms), which explains why the control pulses
+        repeat approximately every 20 ms.</p>
+
     <figure>
-        <img src="images/a4_graph.jpg"> 
-        
+        <img src="images/a4_graph.jpg">
+
         <figcaption>
-            Figure 9. Hand-drawn illustration of the expected servo control pulses at 0°, 90°, and 180° for Question 1.
+            Figure 9. Hand-drawn illustration of the expected servo
+            control pulses at 0°, 90°, and 180° for Question 1.
         </figcaption>
     </figure>
-    
-    <p>With the Arduino Servo library's typical default pulse-width mapping, the endpoints are approximately 
-        544 µs for 0° and 2400 µs for 180°. Intermediate positions have intermediate HIGH durations. 
-        The actual values depend on the library configuration. There are 181 commands, so the total
-        programmed delay is <strong>181 × 100 ms = 18,100 ms = 18.1 seconds</strong>, 
-        plus a small amount of processing time. This figure shows zoomed pulse windows, 
-        not every pulse across the entire sweep.</p>
+
+    <p>There are 181 position commands from 0° through 180°.
+        Since each command is followed by a 100 ms delay,
+        the total programmed delay is
+        <strong>181 × 100 ms = 18,100 ms = 18.1 seconds</strong>,
+        plus a small amount of processing time.
+        The graph shows selected pulse windows rather than
+        every pulse across the entire sweep.</p>
+
 
     <h3>2. Handling Erroneous Sensor Readings 1% of the Time</h3>
     
@@ -1086,6 +1157,13 @@ void loop() {
         <li>Thomas Fredericks and contributors. <a href="https://github.com/thomasfredericks/Bounce2">Bounce2 library</a>. 
             Button debouncing.</li><li>Arduino. <a href="https://github.com/arduino-libraries/Servo">Servo library</a>. 
             Reference for the theoretical servo control signal in Question 1.</li>
+
+        <li>Microchip Technology. <a href="https://docs.arduino.cc/resources/datasheets/ATmega328P-datasheet.pdf">ATmega328P Datasheet</a>.
+            Internal I/O pull-up resistance specifications used for the push button current calculation.</li>
+
+        <li>Arduino.
+            <a href="https://github.com/arduino-libraries/Servo/blob/master/src/Servo.h">Servo.h Source Code</a>.
+            Default pulse widths and refresh interval used in Question 1.</li>
         
         <li>OpenAI. (2026). ChatGPT. Used for brainstorming, programming support, debugging, and documentation assistance. 
             Full conversation linked here. <a href="https://chatgpt.com/share/6aec29c4-e1d0-83e8-95a8-a752563ef200">ChatGPT</a></li> 
