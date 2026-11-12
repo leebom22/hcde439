@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assignment 5: Revisiting the MOSFET</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+      color: #222;
+    }
+
+    h2 {
+      margin-top: 45px;
+    }
+
+    h3 {
+      margin-top: 25px;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 20px auto;
+    }
+
+    figure {
+      margin: 25px 0;
+    }
+
+    figcaption {
+      font-size: 14px;
+      color: #555;
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th, td {
+      border: 1px solid #aaa;
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    pre {
+      background-color: #f1f1f1;
+      padding: 15px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .note {
+      border-left: 3px solid #888;
+      padding-left: 15px;
+      color: #444;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Assignment 5: Revisiting the MOSFET</h1>
+
+  <p>
+    HCDE 439 - Physical Computing | Bomyung Lee | 11.09.26
+  </p>
+
+  <p>
+    Building an IR-Controlled LED Strip to Understand a Previously
+    Challenging Circuit
+  </p>
+
+  <h2>Project Overview</h2>
+
+  <p>
+    For this assignment, I chose to revisit a circuit that I had
+    struggled with during an earlier class exercise. When I first
+    connected an LED strip to a MOSFET, I found the wiring very
+    difficult. Although I eventually got it working, I did not
+    fully understand why each connection was necessary. I felt
+    that I had moved on without learning as much as I wanted.
+  </p>
+
+  <p>
+    Instead of choosing a completely new output device, I rebuilt
+    the MOSFET-controlled LED strip and added an infrared receiver
+    and remote controller. I wanted to understand how a low-power
+    Arduino signal can control a higher-current load using a
+    separate power supply. I also wanted to explore more functions
+    than simply turning the strip on and off.
+  </p>
+
+  <p>
+    The completed controller responds to four remote commands:
+    POWER toggles the lights, VOL+ and VOL- change manual brightness,
+    and FUNC/STOP switches between manual brightness and automatic
+    fading. I tested these functions on my assembled circuit.
+  </p>
+
+  <h3>Remote Control Functions</h3>
+
+  <table>
+    <tr>
+      <th>Remote Button</th>
+      <th>Decoded Command</th>
+      <th>Behavior</th>
+    </tr>
+    <tr>
+      <td>POWER</td>
+      <td>0x45</td>
+      <td>Turn the lighting system on or off.</td>
+    </tr>
+    <tr>
+      <td>VOL+</td>
+      <td>0x46</td>
+      <td>Increase manual brightness by 25 (maximum 255).</td>
+    </tr>
+    <tr>
+      <td>VOL-</td>
+      <td>0x15</td>
+      <td>Decrease manual brightness by 25 (minimum 0).</td>
+    </tr>
+    <tr>
+      <td>FUNC/STOP</td>
+      <td>0x47</td>
+      <td>Toggle automatic fading and manual brightness.</td>
+    </tr>
+  </table>
+
+  <h2>Circuit Schematic</h2>
+
+  <figure>
+    <img
+      src="images/a5_schematic.jpg"
+      alt="Hand-drawn schematic of Arduino, IR receiver, MOSFET and 12V LED strip"
+    >
+    <figcaption>
+      Figure 1. Hand-drawn schematic of the IR-controlled LED strip.
+      The Arduino controls the IRLZ44N gate through a 220-ohm resistor;
+      a 10-kilohm resistor pulls the gate toward ground. The LED strip
+      uses an external 12V supply and a shared ground reference.
+    </figcaption>
+  </figure>
+
+  <p>
+    I used an IRLZ44N N-channel MOSFET as a low-side switch.
+    The LED strip's positive terminal connects to the external
+    12V supply. Its negative terminal connects to the MOSFET
+    drain (pin 2), and the MOSFET source (pin 3) connects to
+    the supply's negative terminal. Arduino D9 controls the
+    gate (pin 1) through a 220-ohm resistor. A 10-kilohm
+    pull-down resistor connects the gate to ground.
+  </p>
+
+  <p>
+    The IR receiver has G, R and Y connections for ground,
+    5V power and signal. The signal connects to Arduino D2.
+    The Arduino ground and the external supply negative
+    terminal share a common ground so the gate-to-source
+    voltage has a defined reference.
+  </p>
+
+  <h3>Component and Pin Connections</h3>
+
+  <table>
+    <tr>
+      <th>Component / Node</th>
+      <th>Connection</th>
+      <th>Reason</th>
+    </tr>
+    <tr>
+      <td>IR receiver Y / R / G</td>
+      <td>Arduino D2 / 5V / GND</td>
+      <td>Receive and decode remote commands using IRremote.</td>
+    </tr>
+    <tr>
+      <td>Arduino D9</td>
+      <td>220 ohms to IRLZ44N Gate</td>
+      <td>Limit transient gate charging current.</td>
+    </tr>
+    <tr>
+      <td>10-kilohm resistor</td>
+      <td>Gate to common GND</td>
+      <td>Keep the MOSFET off when the gate is not driven.</td>
+    </tr>
+    <tr>
+      <td>IRLZ44N Drain</td>
+      <td>LED strip negative</td>
+      <td>Switch the return current of the LED strip.</td>
+    </tr>
+    <tr>
+      <td>IRLZ44N Source</td>
+      <td>Common GND</td>
+      <td>Return load current to the external supply.</td>
+    </tr>
+    <tr>
+      <td>12V supply positive</td>
+      <td>LED strip positive</td>
+      <td>Provide the load voltage independently of Arduino I/O.</td>
+    </tr>
+    <tr>
+      <td>12V supply negative</td>
+      <td>Common GND, including Arduino GND</td>
+      <td>Complete the load path and share a control reference.</td>
+    </tr>
+  </table>
+
+  <h2>Electrical Calculations and Expected Values</h2>
+
+  <p>
+    These calculations use component labels and idealized
+    assumptions, so the LED strip current
+    below is a manufacturer-rated value, not a measurement.
+  </p>
+
+  <h3>1. LED Strip and External Supply</h3>
+
+  <p>
+    I used the complete Lepro PR4100057-DW-US LED strip.
+    Its packaging lists 12V DC, 1.5A and 16W.
+    The external supply is rated at 12V and 2A.
+  </p>
+
+  <p>
+    <strong>Supply rated power capacity:</strong><br>
+    P = V x I = 12V x 2A = 24W
+  </p>
+
+  <p>
+    <strong>Supply current capacity margin:</strong><br>
+    2.0A - 1.5A = 0.5A
+  </p>
+
+  <p>
+    <strong>Voltage times the labeled current:</strong><br>
+    12V x 1.5A = 18W
+  </p>
+
+  <p>
+    The 18W calculation does not match the separate 16W
+    packaging label. I report both without claiming they
+    are identical measurements. If 16W represented actual
+    input power at exactly 12V, the corresponding current
+    would be 16W / 12V = 1.33A. I used 1.5A as the
+    conservative labeled load-current comparison.
+  </p>
+
+  <h3>2. Why I Used a 220-ohm Gate Resistor</h3>
+
+  <p>
+    The MOSFET gate behaves mainly as a capacitive input.
+    A series resistor helps limit the short charging and
+    discharging current pulses from the Arduino pin.
+    For an ideal 5V output and an initially discharged gate:
+  </p>
+
+  <p>
+    <strong>I(initial) approximately = 5V / 220 ohms
+    = 0.0227A = 22.7mA</strong>
+  </p>
+
+  <p>
+    This is an idealized upper estimate for the initial
+    charging current, not the LED strip current and not
+    a continuous MOSFET gate current. The actual transient
+    also depends on the Arduino output impedance and gate
+    capacitance.
+  </p>
+
+  <h3>3. Why I Used a 10-kilohm Pull-down Resistor</h3>
+
+  <p>
+    The 10-kilohm resistor gives the gate a defined LOW
+    level when the Arduino pin is in its default high-impedance
+    input state during reset. When D9 is driven HIGH, the
+    220-ohm and 10-kilohm resistors form a voltage divider.
+    Assuming an ideal 5V Arduino output:
+  </p>
+
+  <p>
+    <strong>I = 5V / (220 + 10000) ohms
+    = 0.000489A = 0.489mA</strong>
+  </p>
+
+  <p>
+    <strong>V(GS) = 5V x 10000 / 10220
+    approximately 4.89V</strong>
+  </p>
+
+  <p>
+    <strong>Voltage across 220 ohms:</strong>
+    0.000489A x 220 ohms approximately 0.108V.<br>
+    <strong>Voltage across 10 kilohms:</strong>
+    0.000489A x 10000 ohms approximately 4.89V.<br>
+    <strong>Pull-down resistor power:</strong>
+    (4.89V)^2 / 10000 ohms approximately 0.00239W.
+  </p>
+
+  <p>
+    A 10-kilohm resistor provides a defined gate voltage
+    without drawing much current during normal HIGH output.
+    A standard 0.25W resistor is more than sufficient for
+    the calculated steady-state dissipation.
+  </p>
+
+  <h3>4. Expected Voltage and Current at Important Nodes</h3>
+
+  <table>
+    <tr>
+      <th>Location</th>
+      <th>OFF state (approx.)</th>
+      <th>ON state (approx.)</th>
+    </tr>
+    <tr>
+      <td>External supply</td>
+      <td>12V</td>
+      <td>12V</td>
+    </tr>
+    <tr>
+      <td>IR receiver power</td>
+      <td>5V</td>
+      <td>5V</td>
+    </tr>
+    <tr>
+      <td>MOSFET source relative to common GND</td>
+      <td>0V</td>
+      <td>Near 0V</td>
+    </tr>
+    <tr>
+      <td>Gate-to-source voltage</td>
+      <td>Near 0V</td>
+      <td>Approximately 4.89V</td>
+    </tr>
+    <tr>
+      <td>MOSFET drain-to-source voltage</td>
+      <td>Near 12V, depending on the LED strip circuit</td>
+      <td>Small voltage drop if sufficiently enhanced</td>
+    </tr>
+    <tr>
+      <td>LED strip voltage</td>
+      <td>Near 0V</td>
+      <td>Near 12V minus MOSFET and wiring drops</td>
+    </tr>
+    <tr>
+      <td>LED strip current</td>
+      <td>Near 0A</td>
+      <td>Up to labeled 1.5A design reference; not measured</td>
+    </tr>
+    <tr>
+      <td>Gate pull-down path</td>
+      <td>Near 0mA</td>
+      <td>Approximately 0.489mA</td>
+    </tr>
+  </table>
+
+  <p>
+    The MOSFET is switched using PWM, so the ON and OFF
+    conditions alternate rapidly at intermediate brightness
+    values. A multimeter could be used in future testing
+    to measure current and voltage rather than relying
+    only on the expected values.
+  </p>
+
+  <h3>5. MOSFET Current Rating and Heating</h3>
+
+  <p>
+    The IRLZ44N datasheet lists a maximum continuous drain
+    current of 47A at a case temperature of 25 degrees C
+    and V(GS) = 10V, and 33A at a case temperature of
+    100 degrees C under its specified conditions.
+    Its pulsed drain-current rating is 160A. These are
+    absolute maximum ratings, not guarantees for an
+    uncooled breadboard assembly.
+  </p>
+
+  <p>
+    The labeled 1.5A LED strip current is much lower than
+    the 47A datasheet number. However, my circuit uses
+    approximately 4.89V gate drive rather than 10V,
+    and safe current also depends on the MOSFET's
+    on-resistance, thermal conditions and connections.
+    MOSFET conduction heating follows P = I^2 x R(DS(on)).
+    Without verifying the exact resistance at my operating
+    gate voltage and temperature, I cannot claim a measured
+    power loss or a proven safe continuous current.
+  </p>
+
+  <h3>6. PWM Brightness Control</h3>
+
+  <p>
+    Arduino Uno D9 supports PWM through analogWrite().
+    A value of 0 commands fully OFF, while 255 commands
+    fully ON. Intermediate values vary the ON fraction
+    of each switching cycle rather than supplying a
+    steady intermediate analog voltage.
+  </p>
+
+  <p>
+    <strong>Default manual duty cycle:
+    150 / 255 x 100% approximately 58.8%</strong>
+  </p>
+
+  <p>
+    This percentage describes the commanded PWM duty cycle,
+    not a measured percentage of perceived brightness.
+    Each VOL+ or VOL- press changes the manual PWM value by 25.
+    During auto mode, the program changes brightness by one
+    count approximately every 8ms, producing a nominal
+    0-to-255 ramp time of 255 x 8ms = 2040ms.
+  </p>
+
+  <h3>7. Physical Wiring Limitation</h3>
+
+  <p>
+    I used alligator clips for most of the 12V load wiring.
+    The 12V negative return connects through a jumper wire
+    and a breadboard row shared with the MOSFET source.
+    That path may carry the full LED strip current.
+    I did not verify the current ratings of the jumper,
+    breadboard contacts or clips, so I cannot establish
+    that this assembly is suitable for prolonged operation.
+    A future version should use appropriately rated wires
+    and connectors for the high-current path.
+  </p>
+
+  <h2>Circuit Implementation</h2>
+
+  <p>
+    I assembled the circuit using an Arduino Uno, an IR
+    receiver, an IRLZ44N MOSFET, a breadboard, resistors,
+    jumper wires, alligator clips, the complete LED strip,
+    and a separate 12V supply. The Arduino was powered
+    by USB during testing.
+  </p>
+
+  <figure>
+    <img src="images/a5_overall_circuit.png"
+      alt="Overall assembled IR-controlled LED strip circuit">
+    <figcaption>
+      Figure 2. Overall circuit showing the Arduino,
+      IR receiver, MOSFET breadboard, LED strip and
+      external power connections.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="images/a5_arduino_closeup.png"
+      alt="Close-up of Arduino Uno connections">
+    <figcaption>
+      Figure 3. Arduino Uno close-up. D2 receives the IR
+      signal, and PWM pin D9 controls the MOSFET gate.
+      The 5V and GND connections supply the receiver
+      and establish the common control reference.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="images/a5_ir_receiver.png"
+      alt="Close-up of IR receiver module and G R Y pins">
+    <figcaption>
+      Figure 4. IR receiver close-up. The module's G, R
+      and Y pins connect to GND, 5V and Arduino D2.
+      I used the IRremote library to decode the buttons.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="images/a5_mosfet_breadboard.png"
+      alt="Close-up of MOSFET and gate resistors on breadboard">
+    <figcaption>
+      Figure 5. IRLZ44N on the breadboard with a 220-ohm
+      series gate resistor and a 10-kilohm pull-down.
+      The MOSFET switches the negative side of the LED strip.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="images/a5_led_strip_power.png"
+      alt="Close-up of LED strip, alligator clips and 12V supply">
+    <figcaption>
+      Figure 6. Close-up of the LED strip and 12V power
+      wiring. Alligator clips connect most of the load path,
+      while the supply negative uses a jumper and breadboard
+      contact to reach the MOSFET source. 
+    </figcaption>
+  </figure>
+
+  <h2>Firmware</h2>
+
+  <p>
+    The program uses the Arduino-IRremote library to decode
+    infrared signals and analogWrite() to control the MOSFET.
+    The four button command values were identified through
+    testing with my remote. Repeated held-button frames are
+    ignored. The automatic fade uses millis() rather than
+    delay(), so remote input can still be checked while
+    brightness changes.
+  </p>
+
+  <h3>Initialization and Pin State</h3>
+
+  <p>
+    At reset, Arduino Uno I/O pins normally begin as inputs
+    with high impedance. Before calling pinMode(D9, OUTPUT),
+    my code calls digitalWrite(D9, LOW) to set the output
+    latch LOW. When D9 becomes an output, it drives LOW;
+    analogWrite(D9, 0) then keeps the strip off. The
+    external 10-kilohm resistor helps hold the MOSFET
+    gate LOW while D9 is not actively driven.
+  </p>
+
+  <h3>Arduino Code</h3>
+
+  <pre><code>
+// Include the IRremote library for decoding infrared signals.
+#include &lt;IRremote.hpp&gt; 
+
+// Assign Arduino D2 to the IR receiver signal.
+const int IR_PIN = 2;
+// Assign Arduino PWM pin D9 to the MOSFET gate.
+const int LED_PIN = 9;
+// Store the measured POWER button command.
+const uint8_t CMD_POWER = 0x45;
+// Store the measured VOL+ button command.
+const uint8_t CMD_UP = 0x46;
+// Store the measured VOL- button command.
+const uint8_t CMD_DOWN = 0x15;
+// Store the measured FUNC/STOP button command.
+const uint8_t CMD_MODE = 0x47;
+// Set the default manual brightness.
+int manualBrightness = 150;
+// Store the current PWM brightness.
+int currentBrightness = 0;
+// Track whether the lighting system is on.
+bool isOn = false;
+// Track whether automatic fading is enabled.
+bool isAutoMode = false;
+// Store the direction of the fade.
+int fadeDirection = 1;
+// Store the time of the previous fade update.
+unsigned long previousFadeTime = 0;
+// Set the time between fade steps in milliseconds.
+const unsigned long FADE_INTERVAL = 8;
+// Set the brightness change for each remote press.
+const int BRIGHTNESS_STEP = 25;
+
+// Initialize the Arduino and IR receiver.
+void setup() {
+  // Set the D9 output latch LOW before enabling output.
+  digitalWrite(LED_PIN, LOW);
+  // Configure D9 as an output pin.
+  pinMode(LED_PIN, OUTPUT);
+  // Initialize the LED strip in the OFF state.
+  analogWrite(LED_PIN, 0);
+  // Start serial communication for debugging.
+  Serial.begin(9600);
+  // Initialize the infrared receiver on D2.
+  IrReceiver.begin(IR_PIN, ENABLE_LED_FEEDBACK);
+  // Print a message when the controller is ready.
+  Serial.println(&quot;Interactive Light Controller Ready!&quot;);
+}
+
+// Main loop to check for IR signals and update fading.
+void loop() {
+  // Check whether the IR receiver has decoded a signal.
+  if (IrReceiver.decode()) {
+    // Ignore repeat frames from a held button.
+    if (!(IrReceiver.decodedIRData.flags &amp; IRDATA_FLAGS_IS_REPEAT)) {
+      // Store the received command.
+      uint8_t command = IrReceiver.decodedIRData.command;
+      // Handle the received remote command.
+      handleRemote(command);
+    }
+    // Prepare the receiver for the next IR signal.
+    IrReceiver.resume();
+  }
+  // Update the automatic fade without blocking input.
+  updateFade();
+}
+
+// Handle a received remote command.
+void handleRemote(uint8_t command) {
+  // Check whether the POWER button was pressed.
+  if (command == CMD_POWER) {
+    // Toggle the lighting system&#x27;s power state.
+    isOn = !isOn;
+    // Check whether the system is now off.
+    if (!isOn) {
+      // Disable automatic fading.
+      isAutoMode = false;
+      // Set the current brightness to zero.
+      currentBrightness = 0;
+      // Turn the LED strip off.
+      analogWrite(LED_PIN, 0);
+    } else {
+      // Restore the saved manual brightness.
+      currentBrightness = manualBrightness;
+      // Apply the restored brightness.
+      analogWrite(LED_PIN, currentBrightness);
+    }
+    // Stop processing after handling POWER.
+    return;
+  }
+  // Ignore other commands while the system is off.
+  if (!isOn) {
+    // Return without changing the light.
+    return;
+  }
+  // Check whether the brightness-up button was pressed.
+  if (command == CMD_UP) {
+    // Switch to manual mode.
+    isAutoMode = false;
+    // Increase brightness without exceeding 255.
+    manualBrightness = constrain(manualBrightness + BRIGHTNESS_STEP, 0, 255);
+    // Update the current brightness.
+    currentBrightness = manualBrightness;
+    // Apply the new PWM brightness.
+    analogWrite(LED_PIN, currentBrightness);
+  }
+  // Check whether the brightness-down button was pressed.
+  else if (command == CMD_DOWN) {
+    // Switch to manual mode.
+    isAutoMode = false;
+    // Decrease brightness without going below zero.
+    manualBrightness = constrain(manualBrightness - BRIGHTNESS_STEP, 0, 255);
+    // Update the current brightness.
+    currentBrightness = manualBrightness;
+    // Apply the new PWM brightness.
+    analogWrite(LED_PIN, currentBrightness);
+  }
+  // Check whether the mode button was pressed.
+  else if (command == CMD_MODE) {
+    // Toggle between manual and automatic modes.
+    isAutoMode = !isAutoMode;
+    // Check whether automatic fading was enabled.
+    if (isAutoMode) {
+      // Begin fading from the current brightness.
+      currentBrightness = manualBrightness;
+      // Start by increasing brightness.
+      fadeDirection = 1;
+      // Reverse direction if already at maximum brightness.
+      if (currentBrightness &gt;= 255) {
+        // Begin decreasing brightness instead.
+        fadeDirection = -1;
+      }
+      // Record the starting time for the fade.
+      previousFadeTime = millis();
+    } else {
+      // Restore the saved manual brightness.
+      currentBrightness = manualBrightness;
+      // Apply the restored manual brightness.
+      analogWrite(LED_PIN, currentBrightness);
+    }
+  }
+}
+
+// Update the PWM brightness for automatic fading.
+void updateFade() {
+  // Continue only when power and auto mode are enabled.
+  if (isOn &amp;&amp; isAutoMode) {
+    // Read the current Arduino uptime.
+    unsigned long currentTime = millis();
+    // Check whether enough time has passed for a fade step.
+    if (currentTime - previousFadeTime &gt;= FADE_INTERVAL) {
+      // Save the time of this fade update.
+      previousFadeTime = currentTime;
+      // Increase or decrease brightness by one step.
+      currentBrightness += fadeDirection;
+      // Check whether maximum brightness was reached.
+      if (currentBrightness &gt;= 255) {
+        // Limit the brightness to 255.
+        currentBrightness = 255;
+        // Reverse the fade toward lower brightness.
+        fadeDirection = -1;
+      }
+      // Check whether minimum brightness was reached.
+      else if (currentBrightness &lt;= 0) {
+        // Limit the brightness to zero.
+        currentBrightness = 0;
+        // Reverse the fade toward higher brightness.
+        fadeDirection = 1;
+      }
+      // Apply the updated PWM brightness.
+      analogWrite(LED_PIN, currentBrightness);
+    }
+  }
+}
+  </code></pre>
+
+  <h3>Firmware Behavior and Timing</h3>
+
+  <p>
+    POWER toggles the system's power state and 
+    restores the saved manual brightness when turning on.
+    VOL+ and VOL- change manualBrightness by 25 and exit 
+    automatic mode. FUNC/STOP toggles automatic fading. 
+    updateFade() changes the PWM value by one count after each
+    nominal 8ms interval and reverses direction at
+    0 and 255. The loop keeps checking remote input
+    instead of waiting in a blocking delay.
+  </p>
+
+  <p>
+    The Arduino-IRremote library is third-party software.
+    Its repository and the official Arduino reference
+    are listed in the References section.
+  </p>
+
+  <h2>Circuit in Operation</h2>
+
+  <figure>
+    <img src="images/a5_video.gif"
+      alt="Animated demonstration of remote power brightness and automatic fade">
+    <figcaption>
+      Figure 7. Demonstration of the completed controller:
+      POWER toggles the strip, VOL+ and VOL- change manual
+      brightness, and FUNC/STOP activates automatic fading.
+      If you want the full video, please go to the following link: <a href="https://drive.google.com/file/d/1oW7uxIuFhJFMmWhw8TXHTdhym8M23Q27/view?usp=sharing">Video</a>
+    </figcaption>
+  </figure>
+
+  <p>
+    I tested the four remote functions on the assembled
+    circuit and recorded their operation. The demonstration
+    shows how the input receiver, Arduino code and MOSFET
+    work together to control an externally powered LED strip.
+  </p>
+
+  <h2>Additional Questions</h2>
+
+  <h3>Q1. Maximum Current Between MOSFET Pins 2 and 3</h3>
+
+  <p>
+    I used the IRLZ44N N-channel MOSFET. Pin 2 is Drain
+    and pin 3 is Source. The Infineon datasheet gives a
+    maximum continuous drain current of 47A at a case
+    temperature of 25 degrees C and V(GS) = 10V.
+    It also lists 33A at a case temperature of 100
+    degrees C and 160A as the pulsed drain-current limit.
+  </p>
+
+  <p>
+    My LED strip is labeled 1.5A, which is below 47A,
+    but the absolute maximum rating is conditional.
+    The approximately 4.89V gate voltage, heat dissipation,
+    and breadboard wiring mean that 47A cannot be treated
+    as a safe current for my physical setup.
+  </p>
+
+  <p>
+    Source: Infineon IRLZ44N datasheet,
+    Absolute Maximum Ratings (page 1).
+  </p>
+
+  <h3>Q2. Proposed DC Motor Circuit with Flyback Diode</h3>
+
+  <figure>
+    <img src="images/a5_motor_schematic.jpg"
+      alt="Hand-drawn proposed DC motor circuit with MOSFET diode and capacitors">
+    <figcaption>
+      Figure 8. My proposed DC motor schematic. It includes
+      an Arduino Uno, IRLZ44N MOSFET, flyback diode,
+      and two capacitors connected across the external
+      motor supply.
+    </figcaption>
+  </figure>
+
+  <p>
+    In this proposed circuit, Arduino D9 connects through
+    220 ohms to the IRLZ44N gate, with a 10-kilohm
+    gate-to-ground pull-down. The motor is connected
+    between the external 6V positive terminal and
+    the MOSFET drain; the MOSFET source and external
+    supply negative share ground with the Arduino.
+  </p>
+
+  <p>
+    A flyback diode connects directly across the motor:
+    its cathode (striped end) goes to Motor + / 6V+,
+    and its anode goes to Motor - / MOSFET Drain.
+    When the MOSFET turns off, the diode provides
+    a path for inductive current and helps suppress
+    the voltage spike. A 100-microfarad polarized
+    electrolytic capacitor (positive to 6V+) and
+    a 0.1-microfarad ceramic capacitor are connected
+    in parallel between 6V+ and common GND.
+  </p>
+
+  <p>
+    The larger capacitor helps buffer slower supply
+    variations, while the smaller ceramic capacitor
+    helps with higher-frequency noise. Both should
+    have a voltage rating greater than 6V; 16V
+    versions would provide margin.
+  </p>
+
+  <h3>Q2. Proposed Component References</h3>
+
+  <p>
+  I selected specific components for this proposed
+  motor circuit and checked their specifications
+  using manufacturer documentation.
+  </p>
+
+  <table>
+    <tr>
+      <th>Component</th>
+      <th>Selected Part</th>
+      <th>Specifications and Datasheet</th>
+    </tr>
+
+    <tr>
+      <td>Arduino Uno</td>
+      <td>Arduino Uno R3</td>
+      <td>
+        5V logic controller.
+        <a href="https://docs.arduino.cc/hardware/uno-rev3/">
+          Official Documentation
+        </a>
+      </td>
+    </tr>
+
+    <tr>
+      <td>MOSFET</td>
+      <td>Infineon IRLZ44N</td>
+      <td>
+        N-channel MOSFET used as a low-side switch.
+        <a href="https://www.infineon.com/assets/row/public/documents/24/49/infineon-irlz44n-datasheet-en.pdf">
+          Official Datasheet
+        </a>
+      </td>
+    </tr>
+
+    <tr>
+      <td>Flyback Diode</td>
+      <td>1N5819 Schottky Diode</td>
+      <td>
+        1A average forward current rating.
+        <a href="https://ww1.microchip.com/downloads/aemDocuments/documents/HRDS/ProductDocuments/DataSheets/1N5819.pdf">
+          Manufacturer Datasheet
+        </a>
+      </td>
+    </tr>
+
+    <tr>
+      <td>DC Motor</td>
+      <td>
+        Pololu #1100
+        5:1 Micro Metal Gearmotor LP 6V
+      </td>
+      <td>
+        Rated voltage: 6V.
+        Typical no-load current: 50mA.
+        Estimated stall current: 360mA.
+        <a href="https://www.pololu.com/file/0J1487/pololu-micro-metal-gearmotors_rev-5-1.pdf">
+          Motor Datasheet
+        </a>
+      </td>
+    </tr>
+
+    <tr>
+      <td>C1</td>
+      <td>Panasonic EEUFR1C101</td>
+      <td>
+        100uF, 16V polarized electrolytic capacitor.
+        <a href="https://na.industrial.panasonic.com/products/capacitors/aluminum-electrolytic-capacitors/lineup/aluminum-electrolytic-capacitors-radial-lead-type/series/83367/model/83641">
+          Manufacturer Specifications and Datasheet
+        </a>
+      </td>
+    </tr>
+
+    <tr>
+      <td>C2</td>
+      <td>Murata GRM188R71C104KA01</td>
+      <td>
+        0.1uF, 16V ceramic capacitor.
+        <a href="https://www.digikey.com/htmldatasheets/production/252722/0/0/1/grm188r71c104ka01-ref-sheet.pdf">
+          Manufacturer Specification Sheet
+        </a>
+      </td>
+    </tr>
+  </table>
+
+<h3>Q2. Component Selection</h3>
+
+<p>
+  I selected a low-power 6V DC gearmotor because
+  its estimated stall current is approximately
+  0.36A. This is below the selected 1N5819
+  diode's 1A average forward current rating,
+  although actual flyback protection also
+  depends on pulse duration and thermal limits.
+</p>
+
+<p>
+  The 100uF electrolytic capacitor and 0.1uF
+  ceramic capacitor are both rated for 16V,
+  which is higher than the proposed 6V supply.
+  The electrolytic capacitor must be connected
+  with the correct polarity.
+</p>
+
+<p>
+  This circuit is a proposed design for Q2.
+  I did not physically build or measure
+  this motor circuit.
+</p>
+
+  <h3>Q3. L293D Motor Driver with Two Motors</h3>
+
+  <figure>
+    <img src="images/a5_l293d_schematic.jpg"
+      alt="Hand-drawn L293D two motor circuit schematic">
+    <figcaption>
+      Figure 9. My hand-drawn schematic using an Arduino,
+      L293D motor driver, two DC motors and a separate
+      motor supply. This is a proposed circuit for Q3.
+    </figcaption>
+  </figure>
+
+  <p>
+    The L293D contains two H-bridge driver channels.
+    Arduino digital outputs set the input combinations,
+    allowing both motors to turn in either direction.
+    Pin 16 (VCC1) connects to Arduino 5V for logic,
+    while pin 8 (VCC2) connects to the external 6V
+    motor supply. Pins 4, 5, 12 and 13 connect to
+    common ground with Arduino GND and the supply
+    negative terminal.
+  </p>
+
+  <p>
+    Motor A connects between L293D pins 3 and 6,
+    while Motor B connects between pins 11 and 14.
+    L293D includes output clamp diodes for inductive
+    loads. Each motor's required current must be checked
+    against the chip's channel rating before building.
+  </p>
+
+  <h3>Q3. Arduino-to-L293D Pin Mapping</h3>
+
+  <table>
+    <tr>
+      <th>Arduino</th>
+      <th>L293D</th>
+      <th>Purpose</th>
+    </tr>
+    <tr>
+      <td>D5</td>
+      <td>Pin 1 (EN1,2)</td>
+      <td>Enable Motor A</td>
+    </tr>
+    <tr>
+      <td>D8</td>
+      <td>Pin 2 (1A)</td>
+      <td>Motor A input 1</td>
+    </tr>
+    <tr>
+      <td>D9</td>
+      <td>Pin 7 (2A)</td>
+      <td>Motor A input 2</td>
+    </tr>
+    <tr>
+      <td>D6</td>
+      <td>Pin 9 (EN3,4)</td>
+      <td>Enable Motor B</td>
+    </tr>
+    <tr>
+      <td>D10</td>
+      <td>Pin 10 (3A)</td>
+      <td>Motor B input 1</td>
+    </tr>
+    <tr>
+      <td>D11</td>
+      <td>Pin 15 (4A)</td>
+      <td>Motor B input 2</td>
+    </tr>
+    <tr>
+      <td>5V</td>
+      <td>Pin 16 (VCC1)</td>
+      <td>Logic power</td>
+    </tr>
+    <tr>
+      <td>External 6V+</td>
+      <td>Pin 8 (VCC2)</td>
+      <td>Motor power</td>
+    </tr>
+    <tr>
+      <td>Common GND</td>
+      <td>Pins 4, 5, 12, 13</td>
+      <td>Shared ground</td>
+    </tr>
+  </table>
+
+  <h3>Q3. Direction Truth Table</h3>
+
+  <table>
+    <tr>
+      <th>Step</th>
+      <th>A1 / A2</th>
+      <th>B1 / B2</th>
+      <th>Motor Directions</th>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>HIGH / LOW</td>
+      <td>HIGH / LOW</td>
+      <td>Both forward</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>LOW / HIGH</td>
+      <td>LOW / HIGH</td>
+      <td>Both backward</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>HIGH / LOW</td>
+      <td>LOW / HIGH</td>
+      <td>A forward, B backward</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>LOW / HIGH</td>
+      <td>HIGH / LOW</td>
+      <td>A backward, B forward</td>
+    </tr>
+  </table>
+
+  <p>
+    The following is illustrative pseudocode in Arduino
+    syntax. It assumes both enable pins are HIGH.
+    The labels forward and backward depend on how
+    the motor terminals are connected. For a physical
+    build, I would add a short stop interval before
+    reversing a moving motor.
+  </p>
+
+  <pre><code>
+// Assign the two motor enable pins.
+const int EN_A = 5;
+// Assign the two motor enable pins.
+const int EN_B = 6;
+// Assign the two direction inputs for Motor A.
+const int A1 = 8;
+// Assign the two direction inputs for Motor A.
+const int A2 = 9;
+// Assign the two direction inputs for Motor B.
+const int B1 = 10;
+// Assign the two direction inputs for Motor B.
+const int B2 = 11;
+
+// Configure motor control pins as outputs.
+void setup() {
+  // Configure Motor A enable.
+  pinMode(EN_A, OUTPUT);
+  // Configure Motor B enable.
+  pinMode(EN_B, OUTPUT);
+  // Configure Motor A direction input 1.
+  pinMode(A1, OUTPUT);
+  // Configure Motor A direction input 2.
+  pinMode(A2, OUTPUT);
+  // Configure Motor B direction input 1.
+  pinMode(B1, OUTPUT);
+  // Configure Motor B direction input 2.
+  pinMode(B2, OUTPUT);
+  // Enable Motor A at full speed.
+  digitalWrite(EN_A, HIGH);
+  // Enable Motor B at full speed.
+  digitalWrite(EN_B, HIGH);
+}
+
+// Repeatedly demonstrate four direction combinations.
+void loop() {
+  // Both forward: A1=HIGH, A2=LOW.
+  digitalWrite(A1, HIGH);
+  // Complete Motor A forward direction.
+  digitalWrite(A2, LOW);
+  // Set Motor B forward direction.
+  digitalWrite(B1, HIGH);
+  // Complete Motor B forward direction.
+  digitalWrite(B2, LOW);
+  // Hold the first combination for two seconds.
+  delay(2000);
+
+  // Both backward: reverse Motor A first input.
+  digitalWrite(A1, LOW);
+  // Reverse Motor A second input.
+  digitalWrite(A2, HIGH);
+  // Reverse Motor B first input.
+  digitalWrite(B1, LOW);
+  // Reverse Motor B second input.
+  digitalWrite(B2, HIGH);
+  // Hold the second combination for two seconds.
+  delay(2000);
+
+  // Set Motor A forward input 1.
+  digitalWrite(A1, HIGH);
+  // Set Motor A forward input 2.
+  digitalWrite(A2, LOW);
+  // Set Motor B backward input 1.
+  digitalWrite(B1, LOW);
+  // Set Motor B backward input 2.
+  digitalWrite(B2, HIGH);
+  // Hold the third combination for two seconds.
+  delay(2000);
+
+  // Set Motor A backward input 1.
+  digitalWrite(A1, LOW);
+  // Set Motor A backward input 2.
+  digitalWrite(A2, HIGH);
+  // Set Motor B forward input 1.
+  digitalWrite(B1, HIGH);
+  // Set Motor B forward input 2.
+  digitalWrite(B2, LOW);
+  // Hold the fourth combination for two seconds.
+  delay(2000);
+}
+  </code></pre>
+
+  <h3>Q4. AI Use and Reflection</h3>
+
+  <p>
+    Yes. I used ChatGPT as a learning, programming and 
+    explanation assistant throughout this assignment. 
+    I asked it to explain the MOSFET gate, drain and 
+    source connections, common ground, gate and pull-down 
+    resistor values, and the separation between Arduino 
+    logic power and the 12V LED load.
+  </p>
+
+  <p>
+    I also used ChatGPT to help develop and troubleshoot
+    the IRremote-based firmware. I tested my actual remote
+    to identify its command codes, checked each function
+    on the physical circuit, and recorded the result.
+    I also asked questions about PWM, electrical
+    calculations, and the motor circuit examples.
+    ChatGPT helped me review and explain these concepts,
+    including parts of my written explanations.
+  </p>
+
+  <p>
+    I selected the project direction, assembled and tested
+    the physical circuit, identified the remote commands,
+    drew the schematics, took the photographs and recorded
+    the demonstration. AI explanations were not always
+    sufficient on their own. I asked follow-up questions
+    and corrected misunderstandings, particularly about
+    flyback diode direction and common ground.
+  </p>
+
+  <p>
+    I found AI most useful when I used it to ask questions
+    instead of simply copying an answer. Revisiting this
+    circuit gave me a second opportunity to understand
+    something I had previously completed without feeling
+    confident about it. I also learned that AI suggestions
+    must be checked against component datasheets, actual
+    behavior and assignment instructions.
+  </p>
+
+  <h2>What I Learned</h2>
+
+  <p>
+    This project was meaningful to me because it revisited
+    a circuit I had found genuinely difficult. In the earlier
+    exercise, I was mostly trying to get the LED strip to
+    turn on. This time, I paid closer attention to why
+    the MOSFET is necessary, how its gate is controlled,
+    why the Arduino and external supply share ground,
+    and why the LED strip cannot simply be powered from
+    a digital output pin.
+  </p>
+
+  <p>
+    Adding remote commands and automatic fading also
+    helped me see how the same hardware could support
+    more interaction. Using millis() allowed the program
+    to keep listening for input while changing brightness.
+    I still want to improve my ability to measure current
+    and verify wiring ratings, but I now understand the
+    circuit much better than I did when I first built it.
+  </p>
+
+  <h2>References</h2>
+
+  <ol>
+    <li>
+      Infineon Technologies. IRLZ44N N-channel MOSFET
+      datasheet.
+      <a href="https://www.infineon.com/assets/row/public/documents/24/49/infineon-irlz44n-datasheet-en.pdf">
+        Official datasheet
+      </a>.
+    </li>
+
+    <li>
+      Texas Instruments. L293D quadruple half-H driver
+      datasheet.
+      <a href="https://www.ti.com/lit/ds/symlink/l293d.pdf">
+        Official datasheet
+      </a>.
+    </li>
+
+    <li>
+      Arduino. Arduino Uno Rev3 documentation.
+      <a href="https://docs.arduino.cc/hardware/uno-rev3/">
+        Official board documentation
+      </a>.
+    </li>
+
+    <li>
+      Arduino. Arduino Language Reference, including
+      analogWrite(), pinMode(), millis() and constrain().
+      <a href="https://www.arduino.cc/reference/en/">
+        Arduino Reference
+      </a>.
+    </li>
+
+    <li>
+      Arduino-IRremote contributors. Arduino-IRremote library.
+      <a href="https://github.com/Arduino-IRremote/Arduino-IRremote">
+        GitHub repository
+      </a>.
+    </li>
+
+    <li>
+      Diodes Incorporated. 1N5819 Schottky rectifier.
+      <a href="https://www.diodes.com/datasheet/download/1N5819.pdf">
+        Manufacturer datasheet link
+      </a>.
+    </li>
+   
+    <li>
+      OpenAI. (2026). ChatGPT. Circuit explanations,
+      programming support, calculations, schematic review,
+      and assistance with written explanations.
+      See Q4 for the conversation record.
+
+      <a href="https://chatgpt.com/share/6af50789-0800-83e8-99b2-448a2a6be599d">
+        ChatGPT conversation link
+      </a>.
+    </li>
+
+  </ol>
+
+  <p>
+    <a href="index.html">Back to Home</a>
+  </p>
+
+</body>
+</html>
