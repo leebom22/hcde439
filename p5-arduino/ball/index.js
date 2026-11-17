@@ -1,75 +1,163 @@
-const BAUD_RATE = 9600; // This should match the baud rate in your Arduino sketch
+const BAUD_RATE = 9600;
 const MIN_DIAMETER = 10;
 const MAX_DIAMETER = 40;
 
-let port, connectBtn; // Declare global variables
+const MOVE_SPEED = 5;
+const DEADZONE = 100;
+const GOAL_DIAMETER = 40;
+
+let port, connectBtn;
+
+// Game variables
+let ballX, ballY;
+let goalX, goalY;
+let diameter = 20;
+let score = 0;
+let lastButtonState = 1;
 
 function setup() {
-  setupSerial(); // Run our serial setup function (below)
-
-  // Create a canvas that is the size of our browser window.
-  // windowWidth and windowHeight are p5 variables
+  setupSerial();
   createCanvas(windowWidth, windowHeight);
+
+  resetGame();
+}
+
+// Reset the game to its starting state
+function resetGame() {
+  ballX = width * 0.2;
+  ballY = height * 0.5;
+
+  goalX = width * 0.8;
+  goalY = height * 0.5;
+
+  score = 0;
 }
 
 function draw() {
-  const portIsOpen = checkPort(); // Check whether the port is open (see checkPort function below)
-  if (!portIsOpen) return; // If the port is not open, exit the draw loop
+  const portIsOpen = checkPort();
+  if (!portIsOpen) return;
 
-  let str = port.readUntil("\n"); // Read from the port until the newline
-  if (str.length == 0) return; // If we didn't read anything, return.
+  // Read data from Arduino
+  let str = port.readUntil("\n");
 
-  let arr = str.trim().split(","); // Trim whitespace and split on commas
+  if (str.length > 0) {
+    let arr = str.trim().split(",");
 
-  // Convert each element to a number and map it to the desired range
-  let x = map(Number(arr[0]), 512, 1023, 0, windowWidth);
-  let y = map(Number(arr[1]), 512, 1023, 0, windowHeight);
-  let diameter = map(Number(arr[2]), 512, 1023, MIN_DIAMETER, MAX_DIAMETER);
+    if (arr.length === 4) {
+      let x = Number(arr[0]);
+      let y = Number(arr[1]);
+      let pot = Number(arr[2]);
+      let button = Number(arr[3]);
 
-  // Draw a circle using our readings
-  circle(x, y, diameter);
+      if ([x, y, pot, button].every(Number.isFinite)) {
+
+        // Potentiometer controls ball size
+        diameter = map(
+          pot, 0, 1023,
+          MIN_DIAMETER, MAX_DIAMETER
+        );
+
+        // Reset when joystick button is pressed
+        if (button === 0 && lastButtonState === 1) {
+          resetGame();
+        } else {
+          // Relative joystick movement
+          if (x < 512 - DEADZONE) {
+            ballX -= MOVE_SPEED;
+          } else if (x > 512 + DEADZONE) {
+            ballX += MOVE_SPEED;
+          }
+
+          if (y < 512 - DEADZONE) {
+            ballY -= MOVE_SPEED;
+          } else if (y > 512 + DEADZONE) {
+            ballY += MOVE_SPEED;
+          }
+        }
+
+        lastButtonState = button;
+      }
+    }
+  }
+
+  // Keep the ball inside the canvas
+  ballX = constrain(
+    ballX, diameter / 2, width - diameter / 2
+  );
+  ballY = constrain(
+    ballY, diameter / 2, height - diameter / 2
+  );
+
+  // Check if the ball reaches the goal
+  let distance = dist(ballX, ballY, goalX, goalY);
+
+  if (distance < (diameter + GOAL_DIAMETER) / 2) {
+    score++;
+
+    // Return ball to starting position
+    ballX = width * 0.2;
+    ballY = height * 0.5;
+  }
+
+  // Draw game background
+  background(245);
+
+  // Display score and instructions
+  fill(30);
+  noStroke();
+  textSize(24);
+  textAlign(CENTER);
+  text("Score: " + score, width / 2, 50);
+
+  textSize(15);
+  text(
+    "Move the ball to the green goal!",
+    width / 2, 80
+  );
+
+  // Draw goal
+  fill("lightgreen");
+  stroke("green");
+  strokeWeight(3);
+  circle(goalX, goalY, GOAL_DIAMETER);
+
+  // Draw player's ball
+  fill("cornflowerblue");
+  stroke("royalblue");
+  strokeWeight(2);
+  circle(ballX, ballY, diameter);
 }
 
-// Three helper functions for managing the serial connection.
+// Serial connection helpers from original example
 
 function setupSerial() {
   port = createSerial();
 
-  // Check to see if there are any ports we have used previously
   let usedPorts = usedSerialPorts();
   if (usedPorts.length > 0) {
-    // If there are ports we've used, open the first one
     port.open(usedPorts[0], BAUD_RATE);
   }
 
-  // create a connect button
   connectBtn = createButton("Connect to Arduino");
-  connectBtn.position(5, 5); // Position the button in the top left of the screen.
-  connectBtn.mouseClicked(onConnectButtonClicked); // When the button is clicked, run the onConnectButtonClicked function
+  connectBtn.position(5, 5);
+  connectBtn.mouseClicked(onConnectButtonClicked);
 }
 
 function checkPort() {
   if (!port.opened()) {
-    // If the port is not open, change button text
     connectBtn.html("Connect to Arduino");
-    // Set background to gray
     background("gray");
     return false;
   } else {
-    // Otherwise we are connected
     connectBtn.html("Disconnect");
-
     return true;
   }
 }
 
 function onConnectButtonClicked() {
-  // When the connect button is clicked
   if (!port.opened()) {
-    // If the port is not opened, we open it
     port.open(BAUD_RATE);
   } else {
-    // Otherwise, we close it!
     port.close();
   }
 }
