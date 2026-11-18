@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StayPut | HCDE 439 Final Project Proposal</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 30px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f7f6fa;
+      color: #252532;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 40px;
+      background: white;
+      border-radius: 15px;
+    }
+
+    .course {
+      display: flex;
+      justify-content: space-between;
+      color: #666;
+      font-size: 14px;
+    }
+
+    header {
+      margin: 35px 0;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #e5e2ed;
+    }
+
+    h1 {
+      font-size: 44px;
+      margin: 0;
+    }
+
+    .subtitle {
+      color: #51418a;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    section {
+      margin-bottom: 25px;
+    }
+
+    h2 {
+      font-size: 19px;
+      margin-bottom: 10px;
+    }
+
+    p, li {
+      font-size: 14px;
+    }
+
+    ul, ol {
+      padding-left: 22px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    .materials {
+      columns: 2;
+    }
+
+    .materials li {
+      break-inside: avoid;
+    }
+
+    .sketch {
+    width: 100%;
+    margin: 0;
+    padding: 12px;
+    background: #faf9fc;
+    border: 1px solid #e5e2ed;
+    border-radius: 12px;
+    }
+
+    .sketch img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 6px;
+    }
+
+    figcaption {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .explanation {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f3f0fb;
+      border-left: 4px solid #8776bd;
+      border-radius: 6px;
+    }
+
+    .explanation h2 {
+      font-size: 15px;
+      color: #51418a;
+    }
+
+    footer {
+      margin-top: 30px;
+      padding-top: 15px;
+      border-top: 1px solid #e5e2ed;
+      font-size: 12px;
+      color: #777;
+    }
+
+    @media (max-width: 850px) {
+      body {
+        padding: 0;
+      }
+
+      .container {
+        padding: 25px;
+      }
+
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .materials {
+        columns: 1;
+      }
+
+      h1 {
+        font-size: 36px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+
+    <div class="course">
+      <span>HCDE 439: Physical Computing</span>
+      <span>Autumn 2026</span>
+    </div>
+
+    <header>
+      <h1>StayPut</h1>
+      <p class="subtitle">
+        An Interactive Phone Dock for Mindful Studying
+      </p>
+    </header>
+
+    <div class="content">
+      <div>
+
+        <section>
+          <h2>Project Concept and Motivation</h2>
+
+          <p>
+            <strong>StayPut</strong> is an interactive phone dock
+            that helps students become more aware of unconscious
+            phone checking while studying. I often pick up my phone 
+            without a reason, which disrupts my focus. I want to 
+            recognize this habit and gradually change it.
+          </p>
+
+          <p>
+            When the phone is lifted off the stand during a
+            focus session, a physical switch detects the change.
+            The Arduino counts the pickup and responds through
+            an OLED display and a short buzzer sound.
+            The OLED also shows a focus timer, facial
+            expressions, and a session summary.
+          </p>
+        </section>
+
+        <section>
+          <h2>Anticipated Bill of Materials</h2>
+
+          <ul class="materials">
+            <li>Arduino UNO R3 (control logic)</li>
+            <li>Physical switch (phone detection)</li>
+            <li>Joystick module (timer adjustment)</li>
+            <li>Push button (start/stop)</li>
+            <li>Small OLED (timer and feedback)</li>
+            <li>Passive buzzer (sound feedback)</li>
+            <li>LED + resistor (focus indicator)</li>
+            <li>Breadboard and wires (connections)</li>
+            <li>3D-printed or cardboard enclosure</li>
+            <li>USB cable (power)</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Timeline and Contingency</h2>
+
+          <ol>
+            <li>
+              Plan the circuit and test the
+              phone-activated switch.
+            </li>
+
+            <li>
+              Connect the OLED, joystick,
+              button, buzzer, and LED.
+            </li>
+
+            <li>
+              Program the focus timer,
+              pickup counter, and feedback.
+            </li>
+
+            <li>
+              Build the phone stand and enclosure
+              using 3D printing or cardboard.
+            </li>
+
+            <li>
+              Integrate the circuit, test the
+              complete product, and refine it.
+            </li>
+          </ol>
+
+          <p>
+            <strong>Plan B:</strong>
+            If the angled pressure-switch mechanism is
+            not working, I will use a flat tray with a
+            directly activated switch.
+            If 3D printing is not possible, I will
+            build the enclosure using cardboard
+            or foam board.
+          </p>
+        </section>
+
+      </div>
+
+      <div>
+
+        <figure class="sketch">
+
+          <img
+            src="images/initial_sketch_fp.png"
+            alt="Hand-drawn StayPut phone dock concept sketch"
+          >
+
+          <figcaption>
+            <strong>
+              Illustration Sketch of Final System
+            </strong>
+            <p>
+              Initial concept sketch. Design and component
+              placement may change during prototyping.
+            </p>
+          </figcaption>
+
+        </figure>
+
+        <div class="explanation">
+          <h2>How the Phone Detection Works</h2>
+
+          <p>
+            The phone's weight presses a physical switch
+            beneath the stand. Removing the phone releases
+            the switch, allowing the Arduino to record
+            a pickup during an active focus session.
+            This mechanism will be tested during prototyping.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+    <footer>
+      HCDE 439 Final Project Proposal |
+      StayPut |
+      Concept subject to iteration
+    </footer>
+
+    <p>
+    <a href="index.html">Back to Home</a>
+    </p>
+
+  </main>
+</body>
+</html>
